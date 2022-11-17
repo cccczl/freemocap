@@ -36,8 +36,7 @@ def triangulate_simple(points, camera_mats):
         A[(i * 2 + 1) : (i * 2 + 2)] = y * mat[2] - mat[1]
     u, s, vh = np.linalg.svd(A, full_matrices=True)
     p3d = vh[-1]
-    p3d = p3d[:3] / p3d[3]
-    return p3d
+    return p3d[:3] / p3d[3]
 
 
 def get_error_dict(errors_full, min_points=10):
@@ -46,7 +45,7 @@ def get_error_dict(errors_full, min_points=10):
 
     good = ~np.isnan(errors_full[:, :, 0])
 
-    error_dict = dict()
+    error_dict = {}
 
     for i in range(n_cams):
         for j in range(i + 1, n_cams):
@@ -70,13 +69,12 @@ def subset_extra(extra, ixs):
     if extra is None:
         return None
 
-    new_extra = {
+    return {
         "objp": extra["objp"][ixs],
         "ids": extra["ids"][ixs],
         "rvecs": extra["rvecs"][:, ixs],
         "tvecs": extra["tvecs"][:, ixs],
     }
-    return new_extra
 
 
 def resample_points_extra(imgp, extra, n_samp=25):
@@ -227,9 +225,9 @@ class Camera:
         self.set_name(d["name"])
         self.set_size(d["size"])
 
-    def from_dict(d):
+    def from_dict(self):
         cam = Camera()
-        cam.load_dict(d)
+        cam.load_dict(self)
         return cam
 
     def get_camera_matrix(self):
@@ -250,10 +248,7 @@ class Camera:
     def get_focal_length(self, both=False):
         fx = self.matrix[0, 0]
         fy = self.matrix[1, 1]
-        if both:
-            return (fx, fy)
-        else:
-            return (fx + fy) / 2.0
+        return (fx, fy) if both else (fx + fy) / 2.0
 
     def set_distortions(self, dist):
         self.dist = np.array(dist, dtype="float64").ravel()
@@ -299,7 +294,7 @@ class Camera:
 
     def get_params(self):
         params = np.zeros(8 + self.extra_dist, dtype="float64")
-        params[0:3] = self.get_rotation()
+        params[:3] = self.get_rotation()
         params[3:6] = self.get_translation()
         params[6] = self.get_focal_length()
         dist = self.get_distortions()
@@ -309,7 +304,7 @@ class Camera:
         return params
 
     def set_params(self, params):
-        self.set_rotation(params[0:3])
+        self.set_rotation(params[:3])
         self.set_translation(params[3:6])
         self.set_focal_length(params[6])
 
@@ -386,9 +381,9 @@ class FisheyeCamera(Camera):
         self.set_name(name)
         self.extra_dist = extra_dist
 
-    def from_dict(d):
+    def from_dict(self):
         cam = FisheyeCamera()
-        cam.load_dict(d)
+        cam.load_dict(self)
         return cam
 
     def get_dict(self):
@@ -431,7 +426,7 @@ class FisheyeCamera(Camera):
         return out
 
     def set_params(self, params):
-        self.set_rotation(params[0:3])
+        self.set_rotation(params[:3])
         self.set_translation(params[3:6])
         self.set_focal_length(params[6])
 
@@ -445,7 +440,7 @@ class FisheyeCamera(Camera):
 
     def get_params(self):
         params = np.zeros(8 + self.extra_dist, dtype="float64")
-        params[0:3] = self.get_rotation()
+        params[:3] = self.get_rotation()
         params[3:6] = self.get_translation()
         params[6] = self.get_focal_length()
         dist = self.get_distortions()
@@ -483,9 +478,7 @@ class CameraGroup:
         indices = []
         for name in names:
             if name not in cur_names_dict:
-                raise IndexError(
-                    "name {} not part of camera names: {}".format(name, cur_names)
-                )
+                raise IndexError(f"name {name} not part of camera names: {cur_names}")
             indices.append(cur_names_dict[name])
         return self.subset_cameras(indices)
 
@@ -506,12 +499,10 @@ class CameraGroup:
         """Given an CxNx2 array, this returns an Nx3 array of points,
         where N is the number of points and C is the number of cameras"""
 
-        assert points.shape[0] == len(self.cameras), (
-            "Invalid points shape, first dim should be equal to"
-            " number of cameras ({}), but shape is {}".format(
-                len(self.cameras), points.shape
-            )
-        )
+        assert points.shape[0] == len(
+            self.cameras
+        ), f"Invalid points shape, first dim should be equal to number of cameras ({len(self.cameras)}), but shape is {points.shape}"
+
 
         one_point = False
         if len(points.shape) == 2:
@@ -533,11 +524,7 @@ class CameraGroup:
 
         cam_mats = np.array([cam.get_extrinsics_mat() for cam in self.cameras])
 
-        if progress:
-            iterator = trange(n_points, ncols=70)
-        else:
-            iterator = range(n_points)
-
+        iterator = trange(n_points, ncols=70) if progress else range(n_points)
         for ip in iterator:
             subp = points[:, ip, :]
             good = ~np.isnan(subp[:, 0])
@@ -562,12 +549,10 @@ class CameraGroup:
         P: number of possible options per point
         """
 
-        assert points.shape[0] == len(self.cameras), (
-            "Invalid points shape, first dim should be equal to"
-            " number of cameras ({}), but shape is {}".format(
-                len(self.cameras), points.shape
-            )
-        )
+        assert points.shape[0] == len(
+            self.cameras
+        ), f"Invalid points shape, first dim should be equal to number of cameras ({len(self.cameras)}), but shape is {points.shape}"
+
 
         n_cams, n_points, n_possible, _ = points.shape
 
@@ -582,7 +567,7 @@ class CameraGroup:
                 all_iters[point_num][cam_num] = []
             all_iters[point_num][cam_num].append((cam_num, possible_num))
 
-        for point_num in all_iters.keys():
+        for point_num in all_iters:
             for cam_num in all_iters[point_num].keys():
                 all_iters[point_num][cam_num].append(None)
 
@@ -591,11 +576,7 @@ class CameraGroup:
         errors = np.zeros(n_points, dtype="float64")
         points_2d = np.full((n_cams, n_points, 2), np.nan, dtype="float64")
 
-        if progress:
-            iterator = trange(n_points, ncols=70)
-        else:
-            iterator = range(n_points)
-
+        iterator = trange(n_points, ncols=70) if progress else range(n_points)
         for point_ix in iterator:
             best_point = None
             best_error = 200
@@ -643,12 +624,10 @@ class CameraGroup:
         """Given an CxNx2 array, this returns an Nx3 array of points,
         where N is the number of points and C is the number of cameras"""
 
-        assert points.shape[0] == len(self.cameras), (
-            "Invalid points shape, first dim should be equal to"
-            " number of cameras ({}), but shape is {}".format(
-                len(self.cameras), points.shape
-            )
-        )
+        assert points.shape[0] == len(
+            self.cameras
+        ), f"Invalid points shape, first dim should be equal to number of cameras ({len(self.cameras)}), but shape is {points.shape}"
+
 
         n_cams, n_points, _ = points.shape
 
@@ -675,9 +654,8 @@ class CameraGroup:
         assert p3ds.shape == (
             n_points,
             3,
-        ), "shapes of 2D and 3D points are not consistent: " "2D={}, 3D={}".format(
-            p2ds.shape, p3ds.shape
-        )
+        ), f"shapes of 2D and 3D points are not consistent: 2D={p2ds.shape}, 3D={p3ds.shape}"
+
 
         errors = np.empty((n_cams, n_points, 2))
 
@@ -693,11 +671,7 @@ class CameraGroup:
             errors = np.sum(errors_norm, axis=0) / denom
 
         if one_point:
-            if mean:
-                errors = float(errors[0])
-            else:
-                errors = errors.reshape(-1, 2)
-
+            errors = float(errors[0]) if mean else errors.reshape(-1, 2)
         return errors
 
     def bundle_adjust_iter(
@@ -722,12 +696,10 @@ class CameraGroup:
         This is inspired by the algorithm for Fast Global Registration by Zhou, Park, and Koltun
         """
 
-        assert p2ds.shape[0] == len(self.cameras), (
-            "Invalid points shape, first dim should be equal to"
-            " number of cameras ({}), but shape is {}".format(
-                len(self.cameras), p2ds.shape
-            )
-        )
+        assert p2ds.shape[0] == len(
+            self.cameras
+        ), f"Invalid points shape, first dim should be equal to number of cameras ({len(self.cameras)}), but shape is {p2ds.shape}"
+
 
         p2ds_full = p2ds
         extra_full = extra
@@ -741,7 +713,7 @@ class CameraGroup:
         mus = np.exp(np.linspace(np.log(start_mu), np.log(end_mu), num=n_iters))
 
         if verbose:
-            print("n_samples: {}".format(n_samp_iter))
+            print(f"n_samples: {n_samp_iter}")
 
         for i in range(n_iters):
             p2ds, extra = resample_points(p2ds_full, extra_full, n_samp=n_samp_full)
@@ -842,12 +814,10 @@ class CameraGroup:
         where N is the number of points and C is the number of cameras,
         this performs bundle adjustsment to fine-tune the parameters of the cameras"""
 
-        assert p2ds.shape[0] == len(self.cameras), (
-            "Invalid points shape, first dim should be equal to"
-            " number of cameras ({}), but shape is {}".format(
-                len(self.cameras), p2ds.shape
-            )
-        )
+        assert p2ds.shape[0] == len(
+            self.cameras
+        ), f"Invalid points shape, first dim should be equal to number of cameras ({len(self.cameras)}), but shape is {p2ds.shape}"
+
 
         if extra is not None:
             extra["ids_map"] = remap_ids(extra["ids"])
@@ -884,8 +854,7 @@ class CameraGroup:
             b = (i + 1) * n_cam_params
             cam.set_params(best_params[a:b])
 
-        error = self.average_error(p2ds)
-        return error
+        return self.average_error(p2ds)
 
     @jit(parallel=True, forceobj=True)
     def _error_fun_bundle(self, params, p2ds, n_cam_params, extra):
@@ -951,11 +920,7 @@ class CameraGroup:
         n_params = total_params_reproj + total_board_params
 
         n_good_values = np.sum(good)
-        if extra is not None:
-            n_errors = n_good_values + n_points * 3
-        else:
-            n_errors = n_good_values
-
+        n_errors = n_good_values + n_points * 3 if extra is not None else n_good_values
         A_sparse = dok_matrix((n_errors, n_params), dtype="int16")
 
         cam_indices_good = cam_indices[good]
@@ -981,16 +946,15 @@ class CameraGroup:
             #          0:n_cams*n_cam_params] = 1
 
             ## update board rotation and translation based on error from expected
-            for i in range(3):
-                for j in range(3):
-                    A_sparse[
-                        n_good_values + point_ix * 3 + i,
-                        total_params_reproj + ids * 3 + j,
-                    ] = 1
-                    A_sparse[
-                        n_good_values + point_ix * 3 + i,
-                        total_params_reproj + n_boards * 3 + ids * 3 + j,
-                    ] = 1
+            for i, j in itertools.product(range(3), range(3)):
+                A_sparse[
+                    n_good_values + point_ix * 3 + i,
+                    total_params_reproj + ids * 3 + j,
+                ] = 1
+                A_sparse[
+                    n_good_values + point_ix * 3 + i,
+                    total_params_reproj + n_boards * 3 + ids * 3 + j,
+                ] = 1
 
             ## update point position based on error from expected
             for i in range(3):
@@ -1089,12 +1053,10 @@ class CameraGroup:
         (meaning that lengths of segments 0->1, 1->2, 2->3 are all constant)
 
         """
-        assert points.shape[0] == len(self.cameras), (
-            "Invalid points shape, first dim should be equal to"
-            " number of cameras ({}), but shape is {}".format(
-                len(self.cameras), points.shape
-            )
-        )
+        assert points.shape[0] == len(
+            self.cameras
+        ), f"Invalid points shape, first dim should be equal to number of cameras ({len(self.cameras)}), but shape is {points.shape}"
+
 
         n_cams, n_frames, n_joints, _ = points.shape
         constraints = np.array(constraints)
@@ -1181,12 +1143,10 @@ class CameraGroup:
         (meaning that lengths of segments 0->1, 1->2, 2->3 are all constant)
 
         """
-        assert points.shape[0] == len(self.cameras), (
-            "Invalid points shape, first dim should be equal to"
-            " number of cameras ({}), but shape is {}".format(
-                len(self.cameras), points.shape
-            )
-        )
+        assert points.shape[0] == len(
+            self.cameras
+        ), f"Invalid points shape, first dim should be equal to number of cameras ({len(self.cameras)}), but shape is {points.shape}"
+
 
         n_cams, n_frames, n_joints, n_possible, _ = points.shape
         constraints = np.array(constraints)
@@ -1284,12 +1244,10 @@ class CameraGroup:
 
         """
 
-        assert points.shape[0] == len(self.cameras), (
-            "Invalid points shape, first dim should be equal to"
-            " number of cameras ({}), but shape is {}".format(
-                len(self.cameras), points.shape
-            )
-        )
+        assert points.shape[0] == len(
+            self.cameras
+        ), f"Invalid points shape, first dim should be equal to number of cameras ({len(self.cameras)}), but shape is {points.shape}"
+
 
         n_cams, n_frames, n_joints, _ = points.shape
         # constraints = np.array(constraints)
@@ -1464,9 +1422,7 @@ class CameraGroup:
         alphas[:, :, :, 0] = 0
 
         params = self._initialize_params_triangulation(p3ds, **kwargs)
-        params_full = np.hstack([params, alphas[good]])
-
-        return params_full
+        return np.hstack([params, alphas[good]])
 
     def _jac_sparsity_triangulation(
         self, p2ds, constraints=[], constraints_weak=[], n_deriv_smooth=1
@@ -1595,10 +1551,7 @@ class CameraGroup:
             B_sparse[point_indices_2d_good_find[alpha_index], n_params + ix] = 1
 
         # alphas should change according to the alpha errors
-        point_indices_good_find = dict()
-        for ix, p in enumerate(point_indices_good):
-            point_indices_good_find[p] = ix
-
+        point_indices_good_find = {p: ix for ix, p in enumerate(point_indices_good)}
         for ix, alpha_index in enumerate(alpha_indices_good):
             if alpha_index in point_indices_good_find:
                 err_ix = n_errors + point_indices_good_find[alpha_index]
@@ -1643,10 +1596,7 @@ class CameraGroup:
     def average_error(self, p2ds, median=False):
         p3ds = self.triangulate(p2ds)
         errors = self.reprojection_error(p3ds, p2ds, mean=True)
-        if median:
-            return np.median(errors)
-        else:
-            return np.mean(errors)
+        return np.median(errors) if median else np.mean(errors)
 
     def calibrate_rows(
         self,
@@ -1666,9 +1616,8 @@ class CameraGroup:
 
             assert (
                 size is not None
-            ), "Camera with name {} has no specified frame size".format(
-                camera.get_name()
-            )
+            ), f"Camera with name {camera.get_name()} has no specified frame size"
+
 
             if init_intrinsics:
                 objp, imgp = board.get_all_calibration_points(rows)
@@ -1704,23 +1653,23 @@ class CameraGroup:
     def get_rows_videos(self, videos, board, verbose=True):
         all_rows = []
 
-        for cix, (cam, cam_videos) in enumerate(zip(self.cameras, videos)):
+        for cam, cam_videos in zip(self.cameras, videos):
             rows_cam = []
             for vnum, vidname in enumerate(cam_videos):
                 if verbose:
                     print(vidname)
                 rows = board.detect_video(vidname, prefix=vnum, progress=verbose)
                 if verbose:
-                    print("{} boards detected".format(len(rows)))
+                    print(f"{len(rows)} boards detected")
                 rows_cam.extend(rows)
             all_rows.append(rows_cam)
 
         return all_rows
 
     def set_camera_sizes_videos(self, videos):
-        for cix, (cam, cam_videos) in enumerate(zip(self.cameras, videos)):
-            rows_cam = []
-            for vnum, vidname in enumerate(cam_videos):
+        rows_cam = []
+        for cam, cam_videos in zip(self.cameras, videos):
+            for vidname in cam_videos:
                 params = get_video_params(vidname)
                 size = (params["width"], params["height"])
                 cam.set_size(size)
@@ -1754,14 +1703,11 @@ class CameraGroup:
         return error, merged, charuco_frames
 
     def get_dicts(self):
-        out = []
-        for cam in self.cameras:
-            out.append(cam.get_dict())
-        return out
+        return [cam.get_dict() for cam in self.cameras]
 
-    def from_dicts(arr):
+    def from_dicts(self):
         cameras = []
-        for d in arr:
+        for d in self:
             if "fisheye" in d and d["fisheye"]:
                 cam = FisheyeCamera.from_dict(d)
             else:
@@ -1769,13 +1715,10 @@ class CameraGroup:
             cameras.append(cam)
         return CameraGroup(cameras)
 
-    def from_names(names, fisheye=False):
+    def from_names(self, fisheye=False):
         cameras = []
-        for name in names:
-            if fisheye:
-                cam = FisheyeCamera(name=name)
-            else:
-                cam = Camera(name=name)
+        for name in self:
+            cam = FisheyeCamera(name=name) if fisheye else Camera(name=name)
             cameras.append(cam)
         return CameraGroup(cameras)
 
@@ -1785,14 +1728,14 @@ class CameraGroup:
 
     def dump(self, fname):
         dicts = self.get_dicts()
-        names = ["cam_{}".format(i) for i in range(len(dicts))]
+        names = [f"cam_{i}" for i in range(len(dicts))]
         master_dict = dict(zip(names, dicts))
         master_dict["metadata"] = self.metadata
         with open(fname, "w") as f:
             toml.dump(master_dict, f)
 
-    def load(fname):
-        master_dict = toml.load(fname)
+    def load(self):
+        master_dict = toml.load(self)
         keys = sorted(master_dict.keys())
         items = [master_dict[k] for k in keys if k != "metadata"]
         cgroup = CameraGroup.from_dicts(items)

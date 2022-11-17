@@ -23,11 +23,11 @@ def RecordCams(session,camInputs,parameterDictionary,rotationInputs):
     vidNames = []
     camIDs = []
     for x in numCamRange:  # create names for each of the initial untrimmed videos
-        singleCamID = "Cam{}".format(x + 1)
+        singleCamID = f"Cam{x + 1}"
         camIDs.append(
             singleCamID
         )  # creates IDs for each camera based on the number of cameras entered
-        singleVidName = "raw_cam{}.mp4".format(x + 1)
+        singleVidName = f"raw_cam{x + 1}.mp4"
         vidNames.append(singleVidName)
 
     #%% Starting the thread recordings for each camera
@@ -75,7 +75,7 @@ def RecordCams(session,camInputs,parameterDictionary,rotationInputs):
         timeDictionary, orient="index"
     )  # create a data frame from this dictionary
     timeStampData = df.transpose()
-    csvName = session.sessionID + "_timestamps.csv" 
+    csvName = session.sessionID + "_timestamps.csv"
     csvPath = session.rawVidPath / csvName
     timeStampData.to_csv(csvPath)  # turn dataframe into a CSV
 

@@ -67,9 +67,9 @@ class FMC_Camera:
         """
 
         self._cam_num = cam_num
-        self._cam_name = 'Camera_{}'.format(str(self._cam_num).zfill(2))
-        self._cam_short_name = 'cam{}'.format(self._cam_name)
-        
+        self._cam_name = f'Camera_{str(self._cam_num).zfill(2)}'
+        self._cam_short_name = f'cam{self._cam_name}'
+
         self._vid_cap_start_time_unix = None
 
         self._cap_parameters_dict = cap_parameters_dict
@@ -84,11 +84,11 @@ class FMC_Camera:
 
         if vid_save_path:
             self._vid_save_path = Path(vid_save_path)
-        
+
 
         if not self.rich_console:
             self.rich_console = Console()
-        
+
         self.open() #open VideoCapture Object
 
         self._show_cam_stream = show_cam_stream
@@ -204,10 +204,14 @@ class FMC_Camera:
         self.video_resolution_height = self.cv2_cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
         if not self.cv2_cap.isOpened():
-            self.rich_console.log("Camera# "+str(self._cam_num)+" failed to open :(")
-            
+            self.rich_console.log(f"Camera# {str(self._cam_num)} failed to open :(")
+
         else:
-            self.rich_console.log("Camera# "+str(self._cam_num)+"  started - Exposure:{} - Resolution(width, height):({},{}) ".format(self.video_exposure, self.video_resolution_width, self.video_resolution_height))
+            self.rich_console.log(
+                f"Camera# {str(self._cam_num)}"
+                + f"  started - Exposure:{self.video_exposure} - Resolution(width, height):({self.video_resolution_width},{self.video_resolution_height}) "
+            )
+
             self._vid_cap_start_time_unix = time.time_ns() #the precision is aspirational, lol
             self._vid_cap_timestamps_unix_ns = np.empty(0)
     
@@ -321,11 +325,7 @@ class FMC_Camera:
     
     def wait_key(self):
 
-        if self.show_cam_stream:
-            self._wait_key = cv2.waitKey(1)            
-        else: 
-            self._wait_key = 27
-
+        self._wait_key = cv2.waitKey(1) if self.show_cam_stream else 27
         return self._wait_key
 
 

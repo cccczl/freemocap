@@ -58,10 +58,9 @@ def on_click(event):
     if xm < event.x < xM and ym < event.y < yM:
         # Event happened within the slider, ignore since it is handled in update_slider
         return
-    else:
-        # user clicked somewhere else on canvas = unpause
-        global is_manual
-        is_manual=False
+    # user clicked somewhere else on canvas = unpause
+    global is_manual
+    is_manual=False
 
 # call update function on slider value change
 animSlider.on_changed(update_slider)

@@ -21,14 +21,14 @@ def parseDeepLabCut(
 
     dlcConfig = config_path # File path for dlcConfig file
     yaml=YAML()
-    
+
     with open(dlcConfig) as configFile:
         # Open the config file
         configList = yaml.load(configFile, Loader=yaml.FullLoader)
         for item, doc in configList.items():  # For each item in the config file
-            if item == "bodyparts":  # If the item is bodyparts
+            if item == "bodyparts":
                 bodypartList = doc  # Set that list to a variable
-            if item == "skeleton":  # If the item is skeleton
+            elif item == "skeleton":
                 skeletonList = doc  # Set that list to a variable
 
     h5files = session.dlcDataPath.glob("*.h5")  # Take all h5 files from folder
@@ -39,8 +39,7 @@ def parseDeepLabCut(
     numImgPoints = len(bodypartList)  # Get amount of points tracked
     dlcData_nCams_nFrames_nImgPts_XYC = np.ndarray([numCams, numFrames, numImgPoints, 3])  # Create empty array for dlc points
 
-    nn = 0  # counter for each camera
-    for data in h5files:  # Loop throuxgh each camera
+    for nn, data in enumerate(h5files):  # Loop throuxgh each camera
 
         with h5py.File(data) as f:  # Open each h5 file
             fullDataGroup = f.get("df_with_missing")  # Open main h5 group
@@ -57,8 +56,6 @@ def parseDeepLabCut(
                 except:
                     print('If you get an out-of-bounds error here, you may have too many DLC files in the DLCData folder - empty it out and re-run DLC to fix')
                     #NOTE - we should fix this , i.e. by moving old DLC data to an 'oldDLCData' folder within DLCData if the user tries to run DLC when there are already files in the DLCData folder
-        nn += 1
-
     if session.debug:
         fig = plt.figure()
 

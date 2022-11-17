@@ -19,7 +19,7 @@ class CamRecordingThread(threading.Thread):
         self.session = session
 
     def run(self):
-        print("Starting " + self.camID)
+        print(f"Starting {self.camID}")
         self.timeStamps = CamRecording(
             self.session,
             self.camID,
@@ -49,7 +49,7 @@ def CamRecording(
     # necessary, since each webcam runs as it's own object.
     global flag
     flag = False
-    camWindowName = "RECORDING - " + str(camID)+' - Press ESC to exit'
+    camWindowName = f"RECORDING - {str(camID)} - Press ESC to exit"
     cv2.namedWindow(camWindowName)  # name the preview window for the camera its showing
 
     if platform.system() == 'Windows':
@@ -68,7 +68,7 @@ def CamRecording(
     codec = parameterDictionary.get("codec")
 
 
-  
+
 
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)

@@ -28,7 +28,8 @@ def CamRecordThread(camCap, webcam_frames_queue, barrier, exit_event, camNum):
             frame_timestamp_tuple = (frame_image, timestamp)
             cam_frame_timestamp_tuple = cam_num_tuple+frame_timestamp_tuple
             webcam_frames_queue.put(cam_frame_timestamp_tuple)
-            log_msg = 'Camera '+ str(camNum)+" got a frame at timestamp:"+ str(timestamp) + ' queue size: ' + str(webcam_frames_queue.qsize())
+            log_msg = f'Camera {str(camNum)} got a frame at timestamp:{str(timestamp)} queue size: {str(webcam_frames_queue.qsize())}'
+
             print(log_msg)
             logging.info(log_msg)
             barrier.wait()
@@ -75,7 +76,7 @@ def saveMultiViewToMP4():
     theseFrames_list = [None]* numCams #create an empty list with numCams entries (Python is weird sometimes, lol)
     theseFrameTuples_list = theseFrames_list
     theseTimestamps = np.empty(numCams)
-    
+
     while webcam_frames_queue.qsize() > 0:
         this_cam_frame_timestamp_tuple = webcam_frames_queue.get() #(camNum,(frame,timestamp))        
         camNum = this_cam_frame_timestamp_tuple[0]
@@ -87,13 +88,9 @@ def saveMultiViewToMP4():
     # allMultiframes.append(theseFrameTuples_list)
 
     for camNum, image in enumerate(theseFrames_list):
-        if camNum==0:
-            multiIm = image
-        else:
-            multiIm = cv2.hconcat([multiIm, image])
-
+        multiIm = image if camNum==0 else cv2.hconcat([multiIm, image])
     multiFrame_queue.put(multiIm)
-    print('multiframe_q size: {}'.format(multiFrame_queue.qsize()))
+    print(f'multiframe_q size: {multiFrame_queue.qsize()}')
 
 
 
@@ -103,7 +100,7 @@ def saveMultiViewToMP4():
 
 def saveMultiViewToH5():
     multiFrameNum = len(h5OutFile)
-    thisFrameName = 'MultiFrame_{}'.format(str(multiFrameNum).zfill(12)) # 12 zeros is probably enough. prove me wrong, you crazy apes <3
+    thisFrameName = f'MultiFrame_{str(multiFrameNum).zfill(12)}'
     thisMultiFrameH5Group = h5OutFile.create_group(thisFrameName, track_order=True)
 
     theseFrames_list = [None]*numCams #empty list of size (numCam)
@@ -116,9 +113,9 @@ def saveMultiViewToH5():
         thisTimestamp = this_cam_frame_timestamp_tuple[2] #the timestamp that this image frame was recieved by the camera
         theseTimestamps_unixEpoch[thisCamNum] = thisTimestamp #the timestamps of each frame in this multiframe (size:numCams)
         camTimestamps_list[thisCamNum] = np.append(camTimestamps_list[thisCamNum], thisTimestamp)#this'll get plotted later as a time sync diagnostic debug whosit :D
-        
+
     thisMultiFrame = np.hstack(theseFrames_list) #horizontally stack each image into a numpy array with dimensions (imageHeight, imageWidth*numCams, 3(RGB)). Equivalent to cv2.hconcat((image0,image1,...,imageN))
-    
+
     theseTimeStamps_fromRecStart = theseTimestamps_unixEpoch-init_time
     thisMultiFrameH5Group.create_dataset('multiFrameImage', data = thisMultiFrame)
     thisMultiFrameH5Group.create_dataset('each_timestamp_unix', data= theseTimestamps_unixEpoch)
@@ -126,7 +123,10 @@ def saveMultiViewToH5():
     thisMultiFrameH5Group.create_dataset('mean_timestamp_unixEpoch', data= np.mean(theseTimestamps_unixEpoch))
     thisMultiFrameH5Group.create_dataset('mean_timestamp_fromRecordStart', data= np.mean(theseTimeStamps_fromRecStart))
     thisMultiFrameH5Group.create_dataset('timestamp', data= np.mean(theseTimeStamps_fromRecStart)) #this is the most intuitive timestamp to use per frame, it's a copy of the more verbosely named 'meanTimestamp_fromRecordStart'
-    print('wrote ' + thisFrameName +' to H5Py - multiframe_q size: {}'.format(multiFrame_queue.qsize()))
+    print(
+        f'wrote {thisFrameName}'
+        + f' to H5Py - multiframe_q size: {multiFrame_queue.qsize()}'
+    )
 
 def ShowMultiView(multiFrame_queue, outputVidObj):
     while not exit_event.is_set():
@@ -143,7 +143,7 @@ def ShowMultiView(multiFrame_queue, outputVidObj):
 if __name__ == "__main__":
 
     init_time = time.time()
-    vidSaveFolderPath = Path('saveFrames_'+str(time.time()))
+    vidSaveFolderPath = Path(f'saveFrames_{str(time.time())}')
     vidSaveFolderPath.mkdir()
 
     format = "%(asctime)s: %(message)s"
@@ -165,8 +165,8 @@ if __name__ == "__main__":
 
     for camNum in range(numCams):
         camTimestamps_list.append(np.empty(0)) #we'll put the timestamps for each camea in here
-        
-        logging.info('starting camera ' + str(camNum))
+
+        logging.info(f'starting camera {str(camNum)}')
 
         if platform.system() == 'Windows':
             camCap_list.append(cv2.VideoCapture(camNum, cv2.CAP_DSHOW))
@@ -175,14 +175,10 @@ if __name__ == "__main__":
 
         camCap_list[camNum].set(cv2.CAP_PROP_FPS,fps)
         camCap_list[camNum].set(cv2.CAP_PROP_EXPOSURE,-9)
-        logging.info('camera '+str(camNum)+ ' started')  
+        logging.info(f'camera {str(camNum)} started')
         success, image = camCap_list[-1].read()
-        assert success, "Camera {} failed to produce an image on startup".format(camNum)
-        if multiFr is None:
-            multiFr = image
-        else:
-            multiFr = cv2.hconcat([multiFr, image])
-
+        assert success, f"Camera {camNum} failed to produce an image on startup"
+        multiFr = image if multiFr is None else cv2.hconcat([multiFr, image])
     #create video save object
     multiFr_height, multiFr_width, channels = multiFr.shape
     multiFrameSize = (multiFr_width, multiFr_height)
@@ -199,15 +195,15 @@ if __name__ == "__main__":
             # barrier = threading.Barrier(numCams, action=saveMultiViewToH5)
             barrier = threading.Barrier(numCams, action=saveMultiViewToMP4)
             for camNum, camCap in enumerate(camCap_list):
-                print('starting thread for cam# '+str(camNum))
+                print(f'starting thread for cam# {str(camNum)}')
                 executor.submit(CamRecordThread, camCap, webcam_frames_queue, barrier, exit_event,  camNum)
-            
+
             executor.submit(ShowMultiView, multiFrame_queue, outputVidObj)
             # print('starting frame handler')
             # executor.submit(incoming_frames_handler, webcam_frames_queue,  exit_event)
 
             runtime = 10
-            logging.info("Main: Record for {} seconds".format(runtime))
+            logging.info(f"Main: Record for {runtime} seconds")
             time.sleep(runtime)
 
             exit_event.set() #send the 'Exit' signal to everyone
@@ -236,14 +232,19 @@ ax5  = plt.subplot(235,  ylim=(0,max_frame_duration), title='Multi Frame Duratio
 ax6  = plt.subplot(236, xlim=(0,max_frame_duration), title='MultiFrame Duration Histogram (count)', xlabel='Duration(s, 1ms bins)', ylabel='Probability')
 
 for camNum, thisCamTimestamps in enumerate(camTimestamps_list):
-    ax1.plot(thisCamTimestamps, label='Camera#'+str(camNum))
+    ax1.plot(thisCamTimestamps, label=f'Camera#{str(camNum)}')
     ax1.legend()
-    ax2.plot(np.diff(thisCamTimestamps),'.')    
+    ax2.plot(np.diff(thisCamTimestamps),'.')
     ax3.hist(np.diff(thisCamTimestamps), bins=np.arange(0,max_frame_duration,.001), alpha=0.5)
 
-ax4.plot(meanMultiFrameTimestamp, color='darkslategrey', label='MultiFrame'+str(camNum))
-ax5.plot(np.diff(meanMultiFrameTimestamp),'.',color='darkslategrey', label='Frame Duration')    
-ax5.plot(meanMultiFrameTimespan, '.', color='orangered', label='Frame TimeSpan')    
+ax4.plot(
+    meanMultiFrameTimestamp,
+    color='darkslategrey',
+    label=f'MultiFrame{str(camNum)}',
+)
+
+ax5.plot(np.diff(meanMultiFrameTimestamp),'.',color='darkslategrey', label='Frame Duration')
+ax5.plot(meanMultiFrameTimespan, '.', color='orangered', label='Frame TimeSpan')
 ax5.legend()
 ax6.hist(np.diff(meanMultiFrameTimestamp), bins=np.arange(0,max_frame_duration,.001), density=True, alpha=0.5, color='darkslategrey', label='Frame Duration')
 ax6.hist(np.diff(meanMultiFrameTimespan), bins=np.arange(0,max_frame_duration,.001), density=True, alpha=0.5, color='orangered', label='Frame Timespan')

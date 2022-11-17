@@ -101,7 +101,7 @@ class OMC_OT_loadOpenMoCapSession(bpy.types.Operator): #setting the type as "OMC
                 bpy.ops.mesh.primitive_uv_sphere_add(align='WORLD', location=thisMarLoc, scale=(ms, ms, ms))            
             elif self.meshType == 'monkey':
                 bpy.ops.mesh.primitive_monkey_add(align='WORLD', location=thisMarLoc, scale=(ms, ms, ms))
-                
+
             thisMarker = C.active_object
 
             # eby.move_object_to_collection(thisMarker, charColl)
@@ -113,17 +113,17 @@ class OMC_OT_loadOpenMoCapSession(bpy.types.Operator): #setting the type as "OMC
         # assert dlcColl.name == dlcCollectionName, 'Charuco Collection name doesnt match. Did it already exist when you tried to make it? If so, Blender would make a new one called `thing.001` or something' 
 
         # C.scene.collection.children.link(charColl) #link the newly created collection to the Blender Scene (so it will show up in the outliner)
-        
+
         print('Loading DLC Markers')
         for marNum in range(len(dlcPts_fr_mar_xyz[0,:,0])):
             thisMarLoc = dlcPts_fr_mar_xyz[0,marNum,:]
             ms = self.dlcMar_size
-            
+
             if self.meshType == 'uv_sphere':
                 bpy.ops.mesh.primitive_uv_sphere_add(align='WORLD', location=thisMarLoc, scale=(ms, ms, ms))            
             elif self.meshType == 'monkey':
                 bpy.ops.mesh.primitive_monkey_add(align='WORLD', location=thisMarLoc, scale=(ms, ms, ms))
-            
+
             thisMarker = C.active_object
             # eby.move_object_to_collection(thisMarker, dlcColl)
 
@@ -144,7 +144,7 @@ class OMC_OT_loadOpenMoCapSession(bpy.types.Operator): #setting the type as "OMC
         print('Loading Skeleton Markers!')
         for marNum in range(len(skel_fr_mar_xyz[startFr,:,0])):
             thisMarLoc = skel_fr_mar_xyz[startFr,marNum,:]
-            
+
             #these will define the size of teh body, hand, and face markers
             bms = self.bodyMar_size
             hms = self.handMar_size
@@ -154,11 +154,11 @@ class OMC_OT_loadOpenMoCapSession(bpy.types.Operator): #setting the type as "OMC
                 bpy.ops.object.armature_add(align='WORLD', location=thisMarLoc)            
             elif self.meshType == 'monkey':
                 bpy.ops.mesh.primitive_monkey_add(align='WORLD', location=thisMarLoc)
-            
+
             thisMarker = C.active_object
 
             # eby.move_object_to_collection(thisMarker, skelColl)
-            
+
             #get names of body markers from name array "skel_markerID" (and build hand and face names from there)
             if marNum < 25 :
                 thisMarker.name = skel_markerID[marNum]

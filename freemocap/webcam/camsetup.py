@@ -28,7 +28,7 @@ class VideoSetup(threading.Thread):
         exposure = parameterDictionary.get("exposure")
         resWidth = parameterDictionary.get("resWidth")
         resHeight = parameterDictionary.get("resHeight")
-        camWindowName = "Camera" + str(self.camID)+' Preview - Press ESC to exit Setup'
+        camWindowName = f"Camera{str(self.camID)} Preview - Press ESC to exit Setup"
         cv2.namedWindow(camWindowName)
 
         if platform.system() == 'Windows':
@@ -41,36 +41,34 @@ class VideoSetup(threading.Thread):
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
         cap.set(cv2.CAP_PROP_EXPOSURE, exposure)
 
-            # showing values of the properties
         print("__________________________________________")
-        print("cv2::videocapture properties for Camera# {}".format(self.camID))
-        print("CV_CAP_PROP_FRAME_WIDTH: '{}'".format(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))
-        print("CV_CAP_PROP_FRAME_HEIGHT : '{}'".format(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-        print("CAP_PROP_FPS : '{}'".format(cap.get(cv2.CAP_PROP_FPS)))
-        print("CAP_PROP_EXPOSURE : '{}'".format(cap.get(cv2.CAP_PROP_EXPOSURE)))
-        print("CAP_PROP_POS_MSEC : '{}'".format(cap.get(cv2.CAP_PROP_POS_MSEC)))
-        print("CAP_PROP_FRAME_COUNT  : '{}'".format(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
-        print("CAP_PROP_BRIGHTNESS : '{}'".format(cap.get(cv2.CAP_PROP_BRIGHTNESS)))
-        print("CAP_PROP_CONTRAST : '{}'".format(cap.get(cv2.CAP_PROP_CONTRAST)))
-        print("CAP_PROP_SATURATION : '{}'".format(cap.get(cv2.CAP_PROP_SATURATION)))
-        print("CAP_PROP_HUE : '{}'".format(cap.get(cv2.CAP_PROP_HUE)))
-        print("CAP_PROP_GAIN  : '{}'".format(cap.get(cv2.CAP_PROP_GAIN)))
-        print("CAP_PROP_CONVERT_RGB : '{}'".format(cap.get(cv2.CAP_PROP_CONVERT_RGB)))
+        print(f"cv2::videocapture properties for Camera# {self.camID}")
+        print(f"CV_CAP_PROP_FRAME_WIDTH: '{cap.get(cv2.CAP_PROP_FRAME_WIDTH)}'")
+        print(f"CV_CAP_PROP_FRAME_HEIGHT : '{cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}'")
+        print(f"CAP_PROP_FPS : '{cap.get(cv2.CAP_PROP_FPS)}'")
+        print(f"CAP_PROP_EXPOSURE : '{cap.get(cv2.CAP_PROP_EXPOSURE)}'")
+        print(f"CAP_PROP_POS_MSEC : '{cap.get(cv2.CAP_PROP_POS_MSEC)}'")
+        print(f"CAP_PROP_FRAME_COUNT  : '{cap.get(cv2.CAP_PROP_FRAME_COUNT)}'")
+        print(f"CAP_PROP_BRIGHTNESS : '{cap.get(cv2.CAP_PROP_BRIGHTNESS)}'")
+        print(f"CAP_PROP_CONTRAST : '{cap.get(cv2.CAP_PROP_CONTRAST)}'")
+        print(f"CAP_PROP_SATURATION : '{cap.get(cv2.CAP_PROP_SATURATION)}'")
+        print(f"CAP_PROP_HUE : '{cap.get(cv2.CAP_PROP_HUE)}'")
+        print(f"CAP_PROP_GAIN  : '{cap.get(cv2.CAP_PROP_GAIN)}'")
+        print(f"CAP_PROP_CONVERT_RGB : '{cap.get(cv2.CAP_PROP_CONVERT_RGB)}'")
         print("__________________________________________")
 
         while True:
             ret1, frame1 = cap.read()
-            if ret1 == True:
-                if rotNum is not None:
-                    frame1 = imutils.rotate_bound(frame1, angle=rotNum)
-                
-                cv2.imshow(camWindowName, frame1)
-                if cv2.waitKey(1) & 0xFF == 27:
-                    # == ord('q') for q
-                    break
-
-            else:
+            if ret1 != True:
                 break
+            if rotNum is not None:
+                frame1 = imutils.rotate_bound(frame1, angle=rotNum)
+
+            cv2.imshow(camWindowName, frame1)
+            if cv2.waitKey(1) & 0xFF == 27:
+                # == ord('q') for q
+                break
+
         cv2.destroyWindow(camWindowName)
 
 class MediaPipeVideoSetup(threading.Thread):
@@ -91,7 +89,7 @@ class MediaPipeVideoSetup(threading.Thread):
         exposure = parameterDictionary.get("exposure")
         resWidth = parameterDictionary.get("resWidth")
         resHeight = parameterDictionary.get("resHeight")
-        camWindowName = "RECORDING - Camera" + str(self.camID)+' - Press ESC to exit'
+        camWindowName = f"RECORDING - Camera{str(self.camID)} - Press ESC to exit"
 
         cv2.namedWindow(camWindowName)
 
@@ -101,58 +99,56 @@ class MediaPipeVideoSetup(threading.Thread):
             cap = cv2.VideoCapture(self.camID, cv2.CAP_ANY)
 
         with mp_holistic.Holistic(
-            static_image_mode=True,
-            model_complexity=0,
-            enable_segmentation=True) as holistic:
+                static_image_mode=True,
+                model_complexity=0,
+                enable_segmentation=True) as holistic:
 
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, resWidth)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resHeight)
             cap.set(cv2.CAP_PROP_EXPOSURE, exposure)
 
-                # showing values of the properties
             print("__________________________________________")
-            print("cv2::videocapture properties for Camera# {}".format(self.camID))
-            print("CV_CAP_PROP_FRAME_WIDTH: '{}'".format(cap.get(cv2.CAP_PROP_FRAME_WIDTH)))
-            print("CV_CAP_PROP_FRAME_HEIGHT : '{}'".format(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
-            print("CAP_PROP_FPS : '{}'".format(cap.get(cv2.CAP_PROP_FPS)))
-            print("CAP_PROP_EXPOSURE : '{}'".format(cap.get(cv2.CAP_PROP_EXPOSURE)))
-            print("CAP_PROP_POS_MSEC : '{}'".format(cap.get(cv2.CAP_PROP_POS_MSEC)))
-            print("CAP_PROP_FRAME_COUNT  : '{}'".format(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
-            print("CAP_PROP_BRIGHTNESS : '{}'".format(cap.get(cv2.CAP_PROP_BRIGHTNESS)))
-            print("CAP_PROP_CONTRAST : '{}'".format(cap.get(cv2.CAP_PROP_CONTRAST)))
-            print("CAP_PROP_SATURATION : '{}'".format(cap.get(cv2.CAP_PROP_SATURATION)))
-            print("CAP_PROP_HUE : '{}'".format(cap.get(cv2.CAP_PROP_HUE)))
-            print("CAP_PROP_GAIN  : '{}'".format(cap.get(cv2.CAP_PROP_GAIN)))
-            print("CAP_PROP_CONVERT_RGB : '{}'".format(cap.get(cv2.CAP_PROP_CONVERT_RGB)))
+            print(f"cv2::videocapture properties for Camera# {self.camID}")
+            print(f"CV_CAP_PROP_FRAME_WIDTH: '{cap.get(cv2.CAP_PROP_FRAME_WIDTH)}'")
+            print(f"CV_CAP_PROP_FRAME_HEIGHT : '{cap.get(cv2.CAP_PROP_FRAME_HEIGHT)}'")
+            print(f"CAP_PROP_FPS : '{cap.get(cv2.CAP_PROP_FPS)}'")
+            print(f"CAP_PROP_EXPOSURE : '{cap.get(cv2.CAP_PROP_EXPOSURE)}'")
+            print(f"CAP_PROP_POS_MSEC : '{cap.get(cv2.CAP_PROP_POS_MSEC)}'")
+            print(f"CAP_PROP_FRAME_COUNT  : '{cap.get(cv2.CAP_PROP_FRAME_COUNT)}'")
+            print(f"CAP_PROP_BRIGHTNESS : '{cap.get(cv2.CAP_PROP_BRIGHTNESS)}'")
+            print(f"CAP_PROP_CONTRAST : '{cap.get(cv2.CAP_PROP_CONTRAST)}'")
+            print(f"CAP_PROP_SATURATION : '{cap.get(cv2.CAP_PROP_SATURATION)}'")
+            print(f"CAP_PROP_HUE : '{cap.get(cv2.CAP_PROP_HUE)}'")
+            print(f"CAP_PROP_GAIN  : '{cap.get(cv2.CAP_PROP_GAIN)}'")
+            print(f"CAP_PROP_CONVERT_RGB : '{cap.get(cv2.CAP_PROP_CONVERT_RGB)}'")
             print("__________________________________________")
 
             while True:
                 ret1, frame1 = cap.read()
-                if ret1 == True:
-                    frame1.flags.writeable = False
-                    results = holistic.process(cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB))
-                    mp_drawing.draw_landmarks(
-                        frame1,
-                        results.face_landmarks,
-                        mp_holistic.FACEMESH_CONTOURS,
-                        landmark_drawing_spec=None,
-                        connection_drawing_spec=mp_drawing_styles
-                        .get_default_face_mesh_contours_style())
-                    mp_drawing.draw_landmarks(
-                        frame1,
-                        results.pose_landmarks,
-                        mp_holistic.POSE_CONNECTIONS,
-                        landmark_drawing_spec=mp_drawing_styles
-                        .get_default_pose_landmarks_style())
-                    if rotNum is not None:
-                        frame1 = imutils.rotate_bound(frame1, angle=rotNum)
-                    cv2.imshow(camWindowName, frame1)
-                    if cv2.waitKey(1) & 0xFF == 27:
-                        # == ord('q') for q
-                        break
-
-                else:
+                if ret1 != True:
                     break
+                frame1.flags.writeable = False
+                results = holistic.process(cv2.cvtColor(frame1, cv2.COLOR_BGR2RGB))
+                mp_drawing.draw_landmarks(
+                    frame1,
+                    results.face_landmarks,
+                    mp_holistic.FACEMESH_CONTOURS,
+                    landmark_drawing_spec=None,
+                    connection_drawing_spec=mp_drawing_styles
+                    .get_default_face_mesh_contours_style())
+                mp_drawing.draw_landmarks(
+                    frame1,
+                    results.pose_landmarks,
+                    mp_holistic.POSE_CONNECTIONS,
+                    landmark_drawing_spec=mp_drawing_styles
+                    .get_default_pose_landmarks_style())
+                if rotNum is not None:
+                    frame1 = imutils.rotate_bound(frame1, angle=rotNum)
+                cv2.imshow(camWindowName, frame1)
+                if cv2.waitKey(1) & 0xFF == 27:
+                    # == ord('q') for q
+                    break
+
             cv2.destroyWindow(camWindowName)
 
 

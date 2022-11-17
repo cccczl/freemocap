@@ -47,7 +47,7 @@ setup(
     author="Jonathan Samir Matthis",
     author_email="jonmatthis@gmail.com",
     url="https://github.com/jonmatthis/freemocap",
-    python_requires=">={}".format(".".join(str(n) for n in min_version)),
+    python_requires=f'>={".".join(str(n) for n in min_version)}',
     packages=find_packages(exclude=["docs", "tests"]),
     entry_points={
         "console_scripts": [
@@ -63,9 +63,13 @@ setup(
         ]
     },
     install_requires=requirements,
-    extras_require={"dlc": ["tensorflow-gpu>=2.0",
-                            "tf_slim>=1.1.0",
-                            "deeplabcut>=2.2",]},
+    extras_require={
+        "dlc": [
+            "tensorflow-gpu>=2.0",
+            "tf_slim>=1.1.0",
+            "deeplabcut>=2.2",
+        ]
+    },
     license="AGPLv3",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",

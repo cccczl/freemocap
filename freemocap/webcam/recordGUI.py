@@ -17,17 +17,13 @@ class recordGUI:
     # this GUI detects how many cameras you have available and presents them in
     # a listbox, and allows you to pick a task for the cameras
     def __init__(self, master):
+        self.refresh = False
         self.master = master
-        self.refresh = False 
         # Detect how many inputs you have available
         available_inputs = checkcams.CreateAvailableCamList()
         number_of_cams = len(available_inputs)
-        cam_statement = (
-            "You have "
-            + str(number_of_cams)
-            + " cameras available at inputs "
-            + str(available_inputs)
-        )
+        cam_statement = f"You have {number_of_cams} cameras available at inputs {str(available_inputs)}"
+
 
         self.master.title("Choose Your Cameras/Task")
         bottom_frame = Frame(self.master, height=100)
@@ -63,7 +59,7 @@ class recordGUI:
         self.refresh_button = Button(bottom_frame, text="Re-detect Cameras", command=self.Refresh)
         self.refresh_button.pack(side=tk.RIGHT)
 
-        
+
         self.sub_button = Button(bottom_frame, text="Submit", command=self.Submit)
         self.sub_button.pack(side=tk.RIGHT)
 
@@ -102,11 +98,7 @@ class SettingsGUI:
         self.currentPath = current_path_to_save
         self.mediaPipeOverlay = False
         # check if any previous parameters exist
-        if self.parameter_dictionary is not None:
-            existing_parameters = True
-        else:
-            existing_parameters = False
-
+        existing_parameters = self.parameter_dictionary is not None
         # check to see if there are any stored rotations for the cameras chosen
         rotationValues = self.RotationRetrieval(cam_inputs, rotation_dictionary)
 
@@ -124,9 +116,9 @@ class SettingsGUI:
         parametersFrame.pack()
         bottomFrame = Frame(self.master).pack(side=tk.BOTTOM)
 
-      
 
-        taskText = "Current Task: " + self.task
+
+        taskText = f"Current Task: {self.task}"
         taskLabel = Label(topFrame, text=taskText, font="bold")
         taskLabel.pack()
         # ---Rotation Options. Dynamically creates radio button options depending
@@ -145,7 +137,7 @@ class SettingsGUI:
             current_rotation = tk.IntVar()
             current_rotation.set(rotDegree)
             self.rotation_list.append(current_rotation)
-            tk.Label(rotLabelFrame, text="Choose rotation for Cam " + str(cam)).pack()
+            tk.Label(rotLabelFrame, text=f"Choose rotation for Cam {str(cam)}").pack()
             for option, degree in rotation_options:
                 rotationRadioButton[cam] = tk.Radiobutton(
                     rotLabelFrame, text=option, value=degree, variable=current_rotation
@@ -169,7 +161,7 @@ class SettingsGUI:
         codecLabel = Label(parametersFrame, text="codec").pack(side="left")
         self.codecEntry = Entry(parametersFrame)
         self.codecEntry.pack(side="left")
-        
+
         if self.task == "setup":
             self.var1 = tk.IntVar()
             c1 = tk.Checkbutton(parametersFrame, text='Mediapipe Overlay',variable=self.var1, onvalue=1, offvalue=0)
@@ -189,7 +181,7 @@ class SettingsGUI:
             pathLabel = Label(recordingSettingsFrame, text=pathText)
             pathLabel.pack()
 
-            text = 'Current file path: ' + self.currentPath
+            text = f'Current file path: {self.currentPath}'
             self.currentPathText = tk.StringVar()
             self.currentPathText.set(text)
             currentPathLabel = Label(recordingSettingsFrame,textvariable = self.currentPathText)
@@ -199,12 +191,12 @@ class SettingsGUI:
 
             changepath_button = Button(recordingSettingsFrame,text = 'Change File Path',command = self.openFileDialog)
             changepath_button.pack(side = 'left')
-            
-            #savedefault_button = Button(recordingSettingsFrame,text = 'Save as Default Path')
-            #savedefault_button.pack(side = 'left')
-            
+                
+                #savedefault_button = Button(recordingSettingsFrame,text = 'Save as Default Path')
+                #savedefault_button.pack(side = 'left')
+
         # ---If previous parameters were recieved, insert them into the entry boxes
-        if existing_parameters == True:
+        if existing_parameters:
 
             self.exposureEntry.insert(0, parameter_dictionary["exposure"])
             self.resWidthEntry.insert(0, parameter_dictionary["resWidth"])
@@ -220,7 +212,7 @@ class SettingsGUI:
         self.currentPath = filedialog.askdirectory(
         title='Open a file',
         initialdir= Path.cwd())
-        self.currentPathText.set('Current file path: ' + self.currentPath)
+        self.currentPathText.set(f'Current file path: {self.currentPath}')
      
 
     def Submit(self):
@@ -238,10 +230,9 @@ class SettingsGUI:
             "framerate": int(self.FPSEntry.get()),
             "codec": str(self.codecEntry.get()),
         }
-        
-        if self.task == "setup":
-            if self.var1.get()==1:
-                self.mediaPipeOverlay=True
+
+        if self.task == "setup" and self.var1.get() == 1:
+            self.mediaPipeOverlay=True
 
         # spit out the sessionID
         if self.task == "record":
@@ -288,7 +279,7 @@ class ProceedToRecordGUI:
         pathLabel = Label(master,text=pathText)
         pathLabel.pack()
 
-        text = 'Current file path: ' + self.currentPath
+        text = f'Current file path: {self.currentPath}'
         self.currentPathText = tk.StringVar()
         self.currentPathText.set(text)
         currentPathLabel = Label(master,textvariable = self.currentPathText)
@@ -297,7 +288,6 @@ class ProceedToRecordGUI:
         changepath_button = Button(master,text = 'Change Folder Path',command = self.openFileDialog)
         changepath_button.pack(side = 'left')
 
-            # master.title("Proceed to Recording?")
         self.proceed_button = Button(text="Begin Recording!", command=self.proceed)
         self.change_button = Button(text = "Change Parameters", command = self.change_params)
         self.stop_button = Button(text="Quit", command=self.stop)
@@ -310,7 +300,7 @@ class ProceedToRecordGUI:
         self.currentPath = filedialog.askdirectory(
         title='Open a file',
         initialdir= Path.cwd())
-        self.currentPathText.set('Current file path: ' + self.currentPath)
+        self.currentPathText.set(f'Current file path: {self.currentPath}')
         
 
     def stop(self):
@@ -342,12 +332,10 @@ def RunChoiceGUI():
         root.mainloop()
         refresh = camera_choice.refresh
 
-    cam_inputs = camera_choice.selected
-    if not cam_inputs:
+    if cam_inputs := camera_choice.selected:
+        return cam_inputs, camera_choice.taskChoice
+    else:
         raise ValueError("No camera inputs selected")
-    task = camera_choice.taskChoice
-
-    return cam_inputs,task
 
 
 def RunParametersGUI(sessionID_in, rotation_entry, parameter_entry,current_path_to_save,cam_inputs,task):
