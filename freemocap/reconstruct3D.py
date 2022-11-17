@@ -14,42 +14,41 @@ def reconstruct3D(session, data_nCams_nFrames_nImgPts_XYC, confidenceThreshold=0
     if (
         session.cgroup is None
     ):  # load the calibration settings into the session class if it hasn't been already
-        calibrationFile = "{}_calibration.yaml".format(session.sessionID)
+        calibrationFile = f"{session.sessionID}_calibration.yaml"
         session.cameraConfigFilePath = session.sessionPath / calibrationFile
         session.cgroup = fmc_anipose.CameraGroup.load(session.cameraConfigFilePath)
 
     nCams, nFrames, nImgPts, nDims = data_nCams_nFrames_nImgPts_XYC.shape
 
-    if nDims == 3:
+    if nDims == 2:
+        data_nCams_nFrames_nImgPts_XY = data_nCams_nFrames_nImgPts_XYC
+    elif nDims == 3:
         dataOG = data_nCams_nFrames_nImgPts_XYC.copy()
 
         for camNum in range(nCams):
                           
-            thisCamX = data_nCams_nFrames_nImgPts_XYC[camNum, :, :,0 ]
-            thisCamY = data_nCams_nFrames_nImgPts_XYC[camNum, :, :,1 ]
             thisCamConf = data_nCams_nFrames_nImgPts_XYC[camNum, :, :, 2]
 
+            thisCamX = data_nCams_nFrames_nImgPts_XYC[camNum, :, :,0 ]
             thisCamX[thisCamConf < confidenceThreshold] = np.nan
+            thisCamY = data_nCams_nFrames_nImgPts_XYC[camNum, :, :,1 ]
             thisCamY[thisCamConf < confidenceThreshold] = np.nan
 
             if session.debug:
                 import matplotlib.pyplot as plt
                 fig = plt.figure(8000+camNum)
-                fig.suptitle("3d reconstruction Confidence thresholding - cam{}".format(camNum))               
+                fig.suptitle(f"3d reconstruction Confidence thresholding - cam{camNum}")
                 axOG = fig.add_subplot(1,2,1)
                 axOG.imshow(dataOG[0,:,:,0])
                 axOG.set_title("Original Data")
                 axTh = fig.add_subplot(1,2,2)
                 axTh.imshow(thisCamX)
                 axTh.set_title("Thresholded Data (there should be NEW and EXCITING gaps :O")
-                
-
-                
 
 
-    if nDims == 2:
-        data_nCams_nFrames_nImgPts_XY = data_nCams_nFrames_nImgPts_XYC
-    elif nDims == 3:
+
+
+
         data_nCams_nFrames_nImgPts_XY = np.squeeze(data_nCams_nFrames_nImgPts_XYC[:, :, :, 0:2])
 
     dataFlat_nCams_nTotalPoints_XY = data_nCams_nFrames_nImgPts_XY.reshape(nCams, -1, 2)  # reshape data to collapse across 'frames' so it becomes [numCams, numFrames*numPoints, XY]

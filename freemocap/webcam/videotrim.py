@@ -22,22 +22,18 @@ def VideoTrim(session, vidList, ft, parameterDictionary, rotationState, numCamRa
     postTrimmingTotalNumFrames = []
 
     for vid,cam,camNum in zip(vidList,camList,numCamRange): #iterate in parallel through camera identifiers and matching videos
-        print('Editing '+cam+' from ' +vid)
+        print(f'Editing {cam} from {vid}')
         cap = cv2.VideoCapture(str(session.rawVidPath/vid)) #initialize OpenCV capture
         frameTable = ft[cam] #grab the frames needed for that camera
         success, image = cap.read() #start reading frames
         fourcc = cv2.VideoWriter_fourcc(*codec)
-        saveName = session.sessionID + "_synced_" + cam + ".mp4"
+        saveName = f"{session.sessionID}_synced_{cam}.mp4"
 
         saveSyncedVidPath = str(
             session.syncedVidPath / saveName
         )  # create an output path for the function
-        if rotationState[camNum] == 90 or rotationState[camNum] == 270:
-            # if we are rotating to these angles, we need to temporarily swap our resWidth and resHeight
-            tempHeight = resHeight
-            resHeight = resWidth
-            resWidth = tempHeight
-
+        if rotationState[camNum] in [90, 270]:
+            resHeight, resWidth = resWidth, resHeight
         out = cv2.VideoWriter(
             saveSyncedVidPath, fourcc, framerate, (resWidth, resHeight)
         )  # change resolution as needed
@@ -62,15 +58,15 @@ def VideoTrim(session, vidList, ft, parameterDictionary, rotationState, numCamRa
                     image = cv2.resize(image, (resWidth, resHeight))
                 out.write(image)
                 f = 2
-            
+
         resWidth = trueWidth
         resHeight = trueHeight
         cap.release()
         out.release()
         frame_length_cap = cv2.VideoCapture(saveSyncedVidPath)
-        thisCamNumFrame = int(frame_length_cap.get(cv2.CAP_PROP_FRAME_COUNT)) 
+        thisCamNumFrame = int(frame_length_cap.get(cv2.CAP_PROP_FRAME_COUNT))
         postTrimmingTotalNumFrames.append(thisCamNumFrame)
-        print('Saved '+ saveSyncedVidPath)
+        print(f'Saved {saveSyncedVidPath}')
         print()
 
     assert postTrimmingTotalNumFrames.count(postTrimmingTotalNumFrames[0]) == len(postTrimmingTotalNumFrames), "Number of frames in each synced video is not the same"
@@ -84,7 +80,7 @@ def createCalibrationVideos(session,calVideoFrameLength,parameterDictionary):
     framelist = list(range(calVideoFrameLength))
     codec = parameterDictionary.get("codec")
     for count, vid in enumerate(vidList, start=1):
-        cam_name = "Cam{}".format(count)
+        cam_name = f"Cam{count}"
         cap = cv2.VideoCapture(str(session.syncedVidPath / vid))
         fourcc = cv2.VideoWriter_fourcc(*codec)
 
@@ -93,9 +89,7 @@ def createCalibrationVideos(session,calVideoFrameLength,parameterDictionary):
         resHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         framerate = int(cap.get(cv2.CAP_PROP_FPS))
 
-        saveName = (
-            session.sessionID + "_trimmed_" + cam_name + ".mp4"
-        )  # create a name for the trimmed video
+        saveName = f"{session.sessionID}_trimmed_{cam_name}.mp4"
         saveCalVidPath = str(
             session.calVidPath / saveName
         )  # create an output path for the function
@@ -103,7 +97,7 @@ def createCalibrationVideos(session,calVideoFrameLength,parameterDictionary):
         success, image = cap.read()  # start reading frames
 
         out = cv2.VideoWriter(saveCalVidPath, fourcc, framerate, (resWidth, resHeight))
-        print("Trimming " + cam_name)
+        print(f"Trimming {cam_name}")
         for frame in track(framelist):
             cap.set(
                 cv2.CAP_PROP_POS_FRAMES, frame

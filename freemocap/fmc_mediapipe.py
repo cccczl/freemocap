@@ -21,13 +21,13 @@ def runMediaPipe(session, dummyRun=False):
 
 
     with mp_holistic.Holistic(
-                            static_image_mode = False, #use 'static image mode' to avoid system getting 'stuck' on ghost skeletons?
-                            model_complexity = 2, #in this house, we turn the Speed/Accuracy dial all the way towards accuracy \o/)
-                            ) as holistic:
+                                static_image_mode = False, #use 'static image mode' to avoid system getting 'stuck' on ghost skeletons?
+                                model_complexity = 2, #in this house, we turn the Speed/Accuracy dial all the way towards accuracy \o/)
+                                ) as holistic:
 
         eachCamerasData = []  # Create an empty list that holds each cameras data
         eachCameraResolution = {'Height':[],'Width':[]}
-        for (  thisVidPath ) in ( session.syncedVidPath.iterdir() ):  # Run MediaPipe 'Holistic' (body, hands, face) tracker on each video in the raw video folder
+        for thisVidPath in ( session.syncedVidPath.iterdir() ):  # Run MediaPipe 'Holistic' (body, hands, face) tracker on each video in the raw video folder
             if ( thisVidPath.suffix.lower() == ".mp4" ):  # NOTE - at some point we should build some list of 'synced video names' and check against that
 
                 
@@ -41,9 +41,10 @@ def runMediaPipe(session, dummyRun=False):
 
                     with Progress() as progress:
                         progressBar = progress.add_task(
-                            "[magenta]MediaPiping: {}".format(thisVidPath.name),
+                            f"[magenta]MediaPiping: {thisVidPath.name}",
                             total=numFrames,
-                        )  # make progressbar
+                        )
+
 
                         while success:
 
@@ -101,8 +102,9 @@ def parseMediaPipe(session):
 
     # Create  array of nans the size of number of cams, frame, points, XYC
     mediaPipeData_nCams_nFrames_nImgPts_XYC = np.empty(
-        (int(numCams), int(numFrames), int(numTrackedPoints), 3)
-    )  # create empty array
+        (numCams, numFrames, int(numTrackedPoints), 3)
+    )
+
     mediaPipeData_nCams_nFrames_nImgPts_XYC[:] = np.NaN  # Fill it with NaNs!
 
     for camNum in range(numCams):  # Loop through each camera

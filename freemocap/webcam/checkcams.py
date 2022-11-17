@@ -11,7 +11,7 @@ def TestDevice(source):
         cap = cv2.VideoCapture(source, cv2.CAP_DSHOW)
     else:
         cap = cv2.VideoCapture(source, cv2.CAP_ANY)
-        
+
     # if cap is None or not cap.isOpened():
     # print('Warning: unable to open video source: ', source)
 
@@ -21,8 +21,7 @@ def TestDevice(source):
         # time.sleep(3)
         cap.release()
         cv2.destroyAllWindows()
-        open_cam = source
-        return open_cam
+        return source
     else:
         return None
 

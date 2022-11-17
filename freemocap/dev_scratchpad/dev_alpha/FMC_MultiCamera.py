@@ -71,13 +71,16 @@ class FMC_MultiCamera:
 
 
         if save_path is None:
-            self._save_path = Path('data/' + self._rec_name)
+            self._save_path = Path(f'data/{self._rec_name}')
         else:
             self._save_path = Path(save_path)
-        
+
         if save_path or save_to_mp4 or save_to_h5 or save_log_file:
             self._save_path.mkdir(parents=True)
-            self._path_to_log_file = Path(str(self._save_path / self._rec_name) + '_log.txt')
+            self._path_to_log_file = Path(
+                f'{str(self._save_path / self._rec_name)}_log.txt'
+            )
+
 
         self._save_to_mp4 = save_to_mp4
         if self._save_to_mp4:            
@@ -89,7 +92,7 @@ class FMC_MultiCamera:
 
         self._num_cams = num_cams
         self._cams_to_use_list = cams_to_use_list
-        
+
         if rotation_codes_list:
             assert len(rotation_codes_list) == self.num_cams, 'Rotation Codes list must be same length as the number of cameras'
             self._rotation_codes_list = rotation_codes_list
@@ -97,8 +100,8 @@ class FMC_MultiCamera:
             self._rotation_codes_list = [None] * self.num_cams            
 
         self._show_multi_cam_stream = show_multi_cam_stream
-        
-        
+
+
         rich_console.rule('Starting FreeMoCap MultiCam!')
 
 
@@ -180,16 +183,8 @@ class FMC_MultiCamera:
     def find_available_cameras(self):
         """find available webcams and return IDs in list."""
         
-        if self.num_cams == 0:
-            num_cams_to_check = 20 #man, i HOPE you're out there trying to record from more than 20 cameras!!!
-        else:
-            num_cams_to_check = self.num_cams
-        
-        if platform.system() == 'Windows':
-            capBackend = cv2.CAP_DSHOW
-        else:
-            capBackend = cv2.CAP_ANY
-
+        num_cams_to_check = 20 if self.num_cams == 0 else self.num_cams
+        capBackend = cv2.CAP_DSHOW if platform.system() == 'Windows' else cv2.CAP_ANY
         self._cams_to_use_list = []
         for camNum in track(range(num_cams_to_check), description='[green]Finding available cameras...' ):
             cap =  cv2.VideoCapture(camNum, capBackend)
@@ -197,7 +192,7 @@ class FMC_MultiCamera:
                 self._cams_to_use_list.append(camNum)
             cap.release()
         rich_console.print("Found cameras at ", self._cams_to_use_list)
-        
+
         self.num_cams = len(self._cams_to_use_list)
         return self.cams_to_use_list
     
@@ -272,14 +267,14 @@ class FMC_MultiCamera:
             this_multi_cam_tuple_as_a_list = [None]*self.num_cams
             these_timestamps = np.ndarray(self.num_cams)
 
-            for cam_num in range(self.num_cams):
+            for _ in range(self.num_cams):
                 this_cam_image_timestamp_tuple = self.cam_frame_queue.get()
                 this_cam_num = this_cam_image_timestamp_tuple[0]
                 this_cam_index = self.cams_to_use_list.index(this_cam_num)
                 these_images_list[this_cam_index] = this_cam_image_timestamp_tuple[1]
                 these_timestamps[this_cam_index] = this_cam_image_timestamp_tuple[2]
                 this_multi_cam_tuple_as_a_list[this_cam_index] = this_cam_image_timestamp_tuple
-            
+
             this_multi_cam_tuple = tuple(this_multi_cam_tuple_as_a_list)
 
             if self._each_cam_timestamps_unix_ns is None:
@@ -302,14 +297,13 @@ class FMC_MultiCamera:
         """
 
         these_images_list = [None]*self.num_cams #empty list of size (numCam)
-           
-           
+
+
 
         for this_cam_num in range(self.num_cams):                                
             these_images_list[this_cam_num] = multi_cam_tuple[this_cam_num][1] #and that's how you navigate nested tuples, lol                                
-        
-        multi_cam_image = np.hstack(these_images_list)  #create multiFrame_image by stitching together (horizontally stacking) incoming camera images (matrices)
-        return multi_cam_image
+
+        return np.hstack(these_images_list)
 
         # rich_console.log('Created a multi_cam_image - queue size: {}'.format(self.multi_cam_tuple_queue.qsize()))
 
@@ -374,7 +368,10 @@ class FMC_MultiCamera:
 
         self.multi_cam_image_size = ( self._multi_cam_image_width, self._multi_cam_image_height)
         fourcc = cv2.VideoWriter_fourcc(*'DIVX')
-        self._outputVid_fileName = str(self._save_path / self._rec_name) + '_outVid.mp4'
+        self._outputVid_fileName = (
+            f'{str(self._save_path / self._rec_name)}_outVid.mp4'
+        )
+
         fps = 30 #this is a bad and stupid guess, but it's actually kinda tricky to guess what is the right thing to put here. I'll fix this later and expect videos to be a bit faster than usual :(
         self._output_video_object = cv2.VideoWriter(self._outputVid_fileName, fourcc, fps, self.multi_cam_image_size)
     ##   
@@ -391,11 +388,11 @@ class FMC_MultiCamera:
         """plot some diagnostics to assess quality of camera sync"""
         try:
             camTimestamps = (self.each_cam_timestamps_unix_ns-self.init_start_time)/1e9 #subtract start time and convert to sec
-            
+
             npy_save_path = self._save_path /'multi_cam_timestamps_frameNum_camNum.npy'
             np.save(str(npy_save_path), camTimestamps)
-            rich_console.log('saving timestamp data to - ' + str(npy_save_path) )
-            
+            rich_console.log(f'saving timestamp data to - {str(npy_save_path)}')
+
             meanMultiFrameTimestamp = np.mean(camTimestamps, axis=1)
             meanMultiFrameTimespan = np.max(camTimestamps, axis=1) - np.min(camTimestamps, axis=1) #what was the timespan covered by each frame
             plt.ion()
@@ -410,22 +407,27 @@ class FMC_MultiCamera:
 
             for camNum in range(self.num_cams):
                 thisCamTimestamps = camTimestamps[:,camNum]
-                ax1.plot(thisCamTimestamps, label='Camera#'+str(camNum))
+                ax1.plot(thisCamTimestamps, label=f'Camera#{str(camNum)}')
                 ax1.legend()
-                ax2.plot(np.diff(thisCamTimestamps),'.')    
+                ax2.plot(np.diff(thisCamTimestamps),'.')
                 ax3.hist(np.diff(thisCamTimestamps), bins=np.arange(0,max_frame_duration,.001), alpha=0.5)
 
-            ax4.plot(meanMultiFrameTimestamp, color='darkslategrey', label='MultiFrame'+str(camNum))
-            ax5.plot(np.diff(meanMultiFrameTimestamp),'.',color='darkslategrey', label='Frame Duration')    
-            ax5.plot(meanMultiFrameTimespan, '.', color='orangered', label='Frame TimeSpan')    
+            ax4.plot(
+                meanMultiFrameTimestamp,
+                color='darkslategrey',
+                label=f'MultiFrame{str(camNum)}',
+            )
+
+            ax5.plot(np.diff(meanMultiFrameTimestamp),'.',color='darkslategrey', label='Frame Duration')
+            ax5.plot(meanMultiFrameTimespan, '.', color='orangered', label='Frame TimeSpan')
             ax5.legend()
             ax6.hist(np.diff(meanMultiFrameTimestamp), bins=np.arange(0,max_frame_duration,.001), density=True, alpha=0.5, color='darkslategrey', label='Frame Duration')
             ax6.hist(np.diff(meanMultiFrameTimespan), bins=np.arange(0,max_frame_duration,.001), density=True, alpha=0.5, color='orangered', label='Frame Timespan')
             ax5.legend()
-        
+
             fig_save_path = self._save_path / 'recording_diagnostics.png'
-            plt.savefig(str(fig_save_path))  
-            rich_console.log('Saving diagnostic figure to - '+str(fig_save_path))
+            plt.savefig(str(fig_save_path))
+            rich_console.log(f'Saving diagnostic figure to - {str(fig_save_path)}')
             plt.show()
             plt.waitforbuttonpress()
         except:

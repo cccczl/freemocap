@@ -26,7 +26,7 @@ sessionParam_dict = {
 def import_fmc():
     
     import_text = 'import freemocap as fmc'
-    print('sending command:' + import_text)
+    print(f'sending command:{import_text}')
 
     iPyWidget.print_text(import_text)
     iPyWidget.execute_command(import_text)

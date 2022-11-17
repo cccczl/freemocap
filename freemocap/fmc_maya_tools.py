@@ -49,9 +49,10 @@ def write_to_maya(fmcDataObj, slice=False, sample_by = 5):
         point_names = tracking_points.keys()
 
         # Create point locators
-        pnt_locs = {}
-        for pnt_name in point_names:
-            pnt_locs[pnt_name] = cmds.spaceLocator(n=pnt_name+ "_loc")[0]
+        pnt_locs = {
+            pnt_name: cmds.spaceLocator(n=f"{pnt_name}_loc")[0]
+            for pnt_name in point_names
+        }
 
         #cmds.scale(0.2, 0.2, 0.2, list(pnt_locs.values()))
 
@@ -61,15 +62,24 @@ def write_to_maya(fmcDataObj, slice=False, sample_by = 5):
         for pnt_name in point_names:
             parents = fmcDataObj.get_point_parents(actor_name, pnt_name)
             for parent_name in parents:
-                line = make_line_between(pnt_locs[pnt_name], pnt_locs[parent_name], "connectorLine_" + pnt_name + "_" + parent_name)
+                line = make_line_between(
+                    pnt_locs[pnt_name],
+                    pnt_locs[parent_name],
+                    f"connectorLine_{pnt_name}_{parent_name}",
+                )
+
                 connect_lines.append(line)
 
         # group everything under the same transform
-        grp = cmds.group(list(pnt_locs.values()) + connect_lines, name="mmcap_" + actor_name + "_grp")
+        grp = cmds.group(
+            list(pnt_locs.values()) + connect_lines,
+            name=f"mmcap_{actor_name}_grp",
+        )
+
 
         # Adding position data to point locators
-        if not slice == False and len(slice)==2:
-            print("Slice active: using samples in range: %s:%s" % (slice[0], slice[1]))
+        if slice != False and len(slice) == 2:
+            print(f"Slice active: using samples in range: {slice[0]}:{slice[1]}")
             sample_range = range(slice[0], slice[1], sample_by)
         else:
             sample_range = range(0, sample_length, sample_by)
@@ -87,13 +97,13 @@ def write_to_maya(fmcDataObj, slice=False, sample_by = 5):
                     cmds.setKeyframe(loc_name, v=pos[2], at='translateZ', time=sample_i )
             progress += progress_step
             if int(progress) > int(last_progress):
-                print(str(int(progress)).zfill(2) + "%")
+                print(f"{str(int(progress)).zfill(2)}%")
                 last_progress = progress
 
 
         # Reorienting base group to align with grid
         for attr in reorient_transform:
-            cmds.setAttr(grp+"." + attr, reorient_transform[attr])
+            cmds.setAttr(f"{grp}.{attr}", reorient_transform[attr])
 
         cmds.playbackOptions(minTime= sample_range[0], maxTime = sample_range[-1])
 
@@ -105,8 +115,8 @@ def make_line_between(obj1, obj2, line_name):
     creates a curve segment and attaches each end to obj1 and obj2 accordingly
     """
     line = cmds.curve(name=line_name, d=1, p=[(0,0,0),(0,0,0)])
-    cmds.connectAttr(obj1+".t", line + ".cv[0]")
-    cmds.connectAttr(obj2+".t", line + ".cv[1]")
+    cmds.connectAttr(f"{obj1}.t", f"{line}.cv[0]")
+    cmds.connectAttr(f"{obj2}.t", f"{line}.cv[1]")
     return line
 
 

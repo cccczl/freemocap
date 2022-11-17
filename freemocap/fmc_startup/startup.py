@@ -50,12 +50,12 @@ def get_data_folder_path(session):
             session.basePath = startupGUI.RunChooseDataPathGUI(session)
             session.preferences['saved']['path_to_save'] = str(session.basePath)
             session.save_user_preferences(session.preferences)
-            
+
             #sesh.dataFolderPath = Path(basePath)/sesh.dataFolderName
 
         elif session.userDataPath is not None:
             session.basePath = session.userDataPath
-        
+
         else:
             try:
                 current_path_to_data = session.preferences['saved']['path_to_save']
@@ -66,12 +66,12 @@ def get_data_folder_path(session):
                 session.preferences['saved']['path_to_save'] = str(session.basePath)
                 session.save_user_preferences(session.preferences)
 
-    
+
         if session.basePath.stem == session.dataFolderName: #don't recursively craete 'FreeMoCap_Data' folders!
             dataFolder = session.basePath
         else:
             dataFolder = session.basePath/session.dataFolderName
-    
+
         session.dataFolderPath = dataFolder
 
 
@@ -95,7 +95,7 @@ def get_blender_path(session, resetBlenderExe):
     if  resetBlenderExe == True:
         print('resetting blender.exe path')
         session.preferences['saved']['blenderEXEpath'] = None
-    if session.preferences['saved']['blenderEXEpath'] == None:
+    if session.preferences['saved']['blenderEXEpath'] is None:
         print('Please select your blender.exe file')
         root = tk.Tk()
         root.withdraw()

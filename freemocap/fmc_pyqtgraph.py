@@ -17,7 +17,7 @@ class PlaySkeletonWidget:
         # self.app = QtGui.QApplication(sys.argv)
         self.Skel3dViewWidget = gl.GLViewWidget()
         self.Skel3dViewWidget.opts["distance"] = 2000
-        self.Skel3dViewWidget.setWindowTitle("SessionID: {}".format(session.sessionID))
+        self.Skel3dViewWidget.setWindowTitle(f"SessionID: {session.sessionID}")
         self.Skel3dViewWidget.setGeometry(0, 110, 1920, 1080)
         self.Skel3dViewWidget.show()
 
@@ -333,13 +333,13 @@ class VideoWindowWidget:
         if success:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
-            self.imgItem.setImage(image)
         else:
             self.vidCap.set(
                 cv2.CAP_PROP_POS_FRAMES, 0
             )  # reset video capture so video will loop
             success, image = self.vidCap.read()
-            self.imgItem.setImage(image)
+
+        self.imgItem.setImage(image)
 
 
 class PlayerDockedWindow:
@@ -373,9 +373,7 @@ class PlayerDockedWindow:
             dock_name = count
             self.dock_name_dictionary[dock_name] = None
 
-        dock_3dView = Dock(
-            "Session: {}".format(session.sessionID), size=(1, 1), closable=True
-        )  ## give this dock the minimum possible size
+        dock_3dView = Dock(f"Session: {session.sessionID}", size=(1, 1), closable=True)
         dock_Console = Dock(
             "Dock2 - Console", size=(winHeight, winWidth), closable=True
         )

@@ -16,15 +16,15 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
   
     def execute(self, context):
         session_path = Path(context.scene.fmc_session_path)        
-         
+
         if not session_path.is_dir():
             session_path = session_path.parent
-        
+
         input_npy = session_path / 'DataArrays' / 'mediaPipeSkel_3d.npy'
         ##########
         #### Begin Copy for fmc_blender 
         ##########
-        
+
         #the path of the npy build data file 
         build_data = Path(__file__).parent.resolve() / "build_data.npy"
 
@@ -73,13 +73,13 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
             if math.isnan(col[2]):
                 col[2] = 0.0
             coord = Vector(((float(col[0])*0.001), (float(col[2])*0.001), (float(col[1]))* -0.001))
-                
+
             #empties
-            bpy.ops.object.add(type='EMPTY', location=coord)  
-            mt = bpy.context.active_object  
-            mt.name = "mt_" + str(index)
-            if index in body_dict.keys():
-                mt.name += "_" + str(body_dict[index])
+            bpy.ops.object.add(type='EMPTY', location=coord)
+            mt = bpy.context.active_object
+            mt.name = f"mt_{str(index)}"
+            if index in body_dict:
+                mt.name += f"_{str(body_dict[index])}"
             order_of_markers.append(mt)
             #link empty to scene
             bpy.context.scene.collection.objects.link( mt )
@@ -87,7 +87,7 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
             mt.location = coord
             #set the display size of the empty
             mt.empty_display_size = 0.02
-            
+
         #--------------------------------------------------------------
         #Virtual Markers!
 
@@ -126,7 +126,7 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
             surrounding_markers.append(surrounding)
             weights.append(vweights)
             create_marker_weight(vname, surrounding, vweights)
-                
+
         #-----------------------------------------------------------------
         #Define relationships and create virtual markers
 
@@ -150,10 +150,10 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
                     weight_iter += 1
                 coord = Vector((float(center[0]), float(center[1]), float(center[2])))
             virtual_markers[index].location = coord
-            
+
         #-----------------------------------------------------------------------------------
         # Bones! 
-            
+
         #adds child bone given corresponding parent and empty
         #bone tail will appear at the location of empty
         def add_child_bone(bone_name, empty1, empty2):
@@ -227,7 +227,7 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
                 ('hip_L', virtual_markers[1], order_of_markers[23]),
                 ('hip_R', virtual_markers[1], order_of_markers[24]),
                 ]
-                
+
         #based on marker # from order_of_markers array add bones for hands:
         left_hand_offset = 54
         left_hand = [('handL0', order_of_markers[0+left_hand_offset], order_of_markers[1+left_hand_offset]),
@@ -252,7 +252,7 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
             ('handL20', order_of_markers[18+left_hand_offset], order_of_markers[19+left_hand_offset]),
             ('wristL', order_of_markers[15], order_of_markers[0+left_hand_offset]),
             ('handL21', order_of_markers[19+left_hand_offset], order_of_markers[20+left_hand_offset]),]
-            
+
         right_hand_offset = 33
 
         right_hand = [('handR0', order_of_markers[18], order_of_markers[1+right_hand_offset]),
@@ -282,12 +282,12 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
         def tuple_to_armature(bones):
             for bone_name, bone_head, bone_tail in bones:
                 add_child_bone(bone_name, bone_head, bone_tail)
-                
+
         #Set armature selected
         armature_data.select_set(state=True)
         #Set edit mode
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
-                
+
         #create all bones for skeleton body and hands
         tuple_to_armature(list_of_bones_order)
         tuple_to_armature(right_hand)
@@ -313,7 +313,7 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
             bone.constraints["Stretch To"].target = tail
             #exit pose mode
             bpy.ops.object.posemode_toggle()
-            
+
         #set parents of heads and tails for each bone 
         def tuple_to_parented(bones):
             for bone_name, bone_head, bone_tail in bones:
@@ -352,14 +352,14 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
                 if math.isnan(col[2]):
                     col[2] = 0.0
                 coord = Vector(((float(col[0])*0.001), (float(col[2])*0.001), (float(col[1]))* -0.001))
-                if len(order_of_markers) > 0:
+                if order_of_markers:
                     empty = order_of_markers[current_marker]
                     empty.location = coord
                     current_marker += 1 
                     for index in range(len(virtual_markers)):
                         update_virtual_marker(index)
-            
-            
+
+
             #keyframe bones
             #Goes through each bone
             for editBone in get_armature().data.edit_bones:
@@ -370,11 +370,11 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
                 poseBone.keyframe_insert('scale', frame=scene.frame_current)
 
         #-----------------------------------------------------------------------------------
-        #script to create a mesh of the armature 
+        #script to create a mesh of the armature
         def CreateMesh():
             obj = get_armature()
 
-            if obj == None:
+            if obj is None:
                 print( "No selection" )
             elif obj.type != 'ARMATURE':
                 print( "Armature expected" )
@@ -383,8 +383,8 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
 
         #Use armature to create base object
         def armToMesh( arm ):
-            name = arm.name + "_mesh"
-            dataMesh = bpy.data.meshes.new( name + "Data" )
+            name = f"{arm.name}_mesh"
+            dataMesh = bpy.data.meshes.new(f"{name}Data")
             mesh = bpy.data.objects.new( name, dataMesh )
             mesh.matrix_world = arm.matrix_world.copy()
             return mesh
@@ -393,7 +393,7 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
         def boneGeometry( l1, l2, x, z, baseSize, l1Size, l2Size, base ):
             x1 = x  * baseSize * l1Size * 0.8
             z1 = z  * baseSize * l2Size * 0.8
-            
+
             x2 = Vector( (0, 0, 0) )
             z2 = Vector( (0, 0, 0) )
 
@@ -517,10 +517,10 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
         bpy.app.handlers.frame_change_post.clear()
         def register():
             bpy.app.handlers.frame_change_post.append(my_handler)
-        
+
         def unregister():
             bpy.app.handlers.frame_change_post.remove(my_handler)
-            
+
         register()
 
         scene = bpy.context.scene
@@ -530,18 +530,18 @@ class FMC_OT_build_armature_from_raw_mocap_data(bpy.types.Operator): #setting th
         #set keyframes for whole animation
         for frame in range(scene.frame_start, scene.frame_end):
             scene.frame_set(frame)
-        
+
         #Select objects to export
         col = bpy.data.collections.get("Collection")
         if col:
             for obj in col.objects:
-                if "Armature" == obj.name:
-                        obj.select_set(True)
+                if obj.name == "Armature":
+                    obj.select_set(True)
 
-        
+
         ##########
         #### end Copy for fmc_blender ^^^
         ##########
-        
+
         return{'FINISHED'}        
 

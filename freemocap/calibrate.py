@@ -31,15 +31,14 @@ def CalibrateCaptureVolume(session,board, calVideoFrameLength = .5):
     session.dataArrayPath.mkdir(exist_ok = True)
     calibrationVideoPath = session.calVidPath
 
-    if type(calVideoFrameLength)==int or type(calVideoFrameLength)==float:
+    if type(calVideoFrameLength) in [int, float]:
         if calVideoFrameLength < 0: # if '-1' use the whole video
             cal_vid_frame_range = [0, session.numFrames]
             calibrationVideoPath = session.calVidPath
-        else:
-            if calVideoFrameLength>0 and calVideoFrameLength<1: #if between 0 and 1, use as a percentage of the total video length
-                cal_vid_frame_range = [0, round(calVideoFrameLength * session.numFrames)]
-            else: #otherwise, just use the input value as the number of frames to use        
-                cal_vid_frame_range = [0, calVideoFrameLength]
+        elif calVideoFrameLength>0 and calVideoFrameLength<1: #if between 0 and 1, use as a percentage of the total video length
+            cal_vid_frame_range = [0, round(calVideoFrameLength * session.numFrames)]
+        else: #otherwise, just use the input value as the number of frames to use        
+            cal_vid_frame_range = [0, calVideoFrameLength]
     elif type(calVideoFrameLength)==list:
         if len(calVideoFrameLength) ==2:
             cal_vid_frame_range = calVideoFrameLength
@@ -57,12 +56,12 @@ def CalibrateCaptureVolume(session,board, calVideoFrameLength = .5):
 
     cgroup = fmc_anipose.CameraGroup.from_names( cam_names, fisheye=True  )  # Looking through their code... it looks lke the 'fisheye=True' doesn't do much (see 2020-03-29 obsidian note)
 
-    calibrationFile = "{}_calibration.toml".format(session.sessionID)
+    calibrationFile = f"{session.sessionID}_calibration.toml"
 
     session.cameraCalFilePath = session.sessionPath / calibrationFile
 
     error,charuco_data, charuco_frames = cgroup.calibrate_videos(vidnames, board)
-    
+
     ## iteratively retry if anipose fails, butcouldn't get this to work because anipose launches some weird thread process that doesn't terminate properly? 
     # try:
     #     error,charuco_data, charuco_frames = cgroup.calibrate_videos(vidnames, board)
@@ -76,28 +75,28 @@ def CalibrateCaptureVolume(session,board, calVideoFrameLength = .5):
 
     # anipose_iter = -1
     # if not anipose_success: #%% run anipose calibration, and if it fails, re-make calibration vids with different frame range and try again
-        
+
     #     frame_window_size = round(session.numFrames*.5)
     #     cal_video_frame_range = [0, frame_window_size]
     #     while not anipose_success:
     #             anipose_iter += 1
     #             console.rule('Anipose Failed - Reprocessing - Iteration #{}'.format(anipose_iter), style="color({})".format(3))
-                
+
     #             if cal_video_frame_range[1] > session.numFrames:
     #                 console.rule('We moved the window all the way through the videos and Anipose still isn\'t happy, starting again from the begining with a shorter frame window', style="color({})".format(3))
     #                 frame_window_size = round(frame_window_size/2)
     #                 cal_video_frame_range = [0, frame_window_size]
-                                    
+
     #                 if round(cal_video_frame_range[-1] * session.numFrames) < 1 or anipose_iter > 20:
     #                     Exception('Sorry, we weren\'t able to get AniPose to run successfully :( - Make sure your Charuco board was visible to each camera (not necessarily at the same time) and that there wasn\'t, like, a bunch of glare on it')
     #                     return
-            
+
     #             console.rule('Trying Anipose calibration again with frame range {} - {}'.format(cal_video_frame_range[0], cal_video_frame_range[1]), style="color({})".format(3))
     #             createCalibrationVideos(session, cal_video_frame_range)
 
     #             try:
     #                 error,charuco_data, charuco_frames = cgroup.calibrate_videos(vidnames, board)
-                    
+
     #                 if not spoof_anipose_fail_bool:
     #                     anipose_success=True
     #                 else:
@@ -111,14 +110,17 @@ def CalibrateCaptureVolume(session,board, calVideoFrameLength = .5):
     cgroup.dump(session.cameraCalFilePath) 
 
     camera_calibration_info_dict = cgroup.get_dicts()
-    camera_calibration_pickle_path = session.sessionPath / "{}_calibration.pickle".format(session.sessionID)
-    
+    camera_calibration_pickle_path = (
+        session.sessionPath / f"{session.sessionID}_calibration.pickle"
+    )
+
+
     with open(str(camera_calibration_pickle_path), 'wb') as pickle_file:
         pickle.dump(camera_calibration_info_dict, pickle_file)
-        
+
     # camera_calibration_json_filename = "{}_calibration.json".format(session.sessionID)
     # camera_calibration_json_path = session.sessionPath / camera_calibration_json_filename
-    
+
     # with open(camera_calibration_json_path, "w") as outfile:
     #     for camera_number, this_cam_calib_info in enumerate(camera_calibration_info_dict):
     #         camera_name = "camera_"+str(camera_number)
@@ -142,7 +144,7 @@ def CalibrateCaptureVolume(session,board, calVideoFrameLength = .5):
             except:
                 # print("failed frame:", frame)
                 continue
-    
+
     charuco2d_filename = session.dataArrayPath/'charuco_2d_points.npy'
     np.save(charuco2d_filename,charuco_nCams_nFrames_nImgPts_XY)
 
@@ -226,10 +228,10 @@ def createCalibrationVideos(session, calVideoFrameLength):
         framelist = list(range(calVideoFrameLength[0], calVideoFrameLength[1]))
     else:
         Exception('calVideoFrameLength must be either 1 or 2 elements long')
-    
+
     codec = "DIVX"
     for count, vid in enumerate(vidList, start=1):
-        cam_name = "Cam{}".format(count)
+        cam_name = f"Cam{count}"
         cap = cv2.VideoCapture(str(session.syncedVidPath / vid))
         fourcc = cv2.VideoWriter_fourcc(*codec)
 
@@ -238,9 +240,7 @@ def createCalibrationVideos(session, calVideoFrameLength):
         resHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         framerate = int(cap.get(cv2.CAP_PROP_FPS))
 
-        saveName = (
-            session.sessionID + "_trimmed_" + cam_name + ".mp4"
-        )  # create a name for the trimmed video
+        saveName = f"{session.sessionID}_trimmed_{cam_name}.mp4"
         saveCalVidPath = str(
             session.calVidPath / saveName
         )  # create an output path for the function
@@ -248,7 +248,11 @@ def createCalibrationVideos(session, calVideoFrameLength):
         success, image = cap.read()  # start reading frames
 
         out = cv2.VideoWriter(saveCalVidPath, fourcc, framerate, (resWidth, resHeight))
-        print("Trimming " + cam_name + " to frames {}-{} for Anipose Calibration".format(framelist[0], framelist[-1]))
+        print(
+            f"Trimming {cam_name}"
+            + f" to frames {framelist[0]}-{framelist[-1]} for Anipose Calibration"
+        )
+
         for frame in track(framelist):
             cap.set(
                 cv2.CAP_PROP_POS_FRAMES, frame

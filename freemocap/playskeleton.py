@@ -56,15 +56,14 @@ def ReplaySkeleton_matplotlib(
         ballTrailLen = 4
 
     if useOpenPose:
-        for camera_number in range(session.numCams):
+        for _ in range(session.numCams):
             imgPathList = session.session_settings['openPose_imgPathList']
-  
-    
-    camImgPathList = {}
-    for cam in range(session.numCams):
-        camImgPathList[cam] = list(sorted(Path(imgPathList[cam]).glob('*.png')))
-        #session.numFrames = len(camImgPathList[cam]) #will need to perhaps put a check in on whether numFrames between cameras are the same
-    
+
+
+    camImgPathList = {
+        cam: list(sorted(Path(imgPathList[cam]).glob('*.png')))
+        for cam in range(session.numCams)
+    }
 
 # define Skeleton connections 
 # head = [17, 15, 0, 16, 18]
@@ -287,7 +286,7 @@ def ReplaySkeleton_matplotlib(
         plt.show()
 
         frameName = str(fr).zfill(6)
-        saveFrameName = "{}.png".format(frameName)
+        saveFrameName = f"{frameName}.png"
         saveFramePath = session.imOutPath / saveFrameName
         fig.savefig(saveFramePath)
 

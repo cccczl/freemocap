@@ -38,7 +38,7 @@ win.show()
 
 if RawImageGLWidget is None:
     ui.rawGLRadio.setEnabled(False)
-    ui.rawGLRadio.setText(ui.rawGLRadio.text() + " (OpenGL not available)")
+    ui.rawGLRadio.setText(f"{ui.rawGLRadio.text()} (OpenGL not available)")
 else:
     ui.rawGLImg = RawImageGLWidget()
     ui.stack.addWidget(ui.rawGLImg)

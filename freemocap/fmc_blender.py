@@ -7,7 +7,7 @@ from pathlib import Path
 # get arguments
 argv = sys.argv
 argv = argv[argv.index("--") + 1:] 
- 
+
 # get npy session data
 input_npy = argv[0]
 
@@ -62,13 +62,13 @@ for index, col in enumerate(markers_list):
     if math.isnan(col[2]):
         col[2] = 0.0
     coord = Vector(((float(col[0])*0.001), (float(col[2])*0.001), (float(col[1]))* -0.001))
-        
+
     #empties
-    bpy.ops.object.add(type='EMPTY', location=coord)  
-    mt = bpy.context.active_object  
-    mt.name = "mt_" + str(index)
-    if index in body_dict.keys():
-        mt.name += "_" + str(body_dict[index])
+    bpy.ops.object.add(type='EMPTY', location=coord)
+    mt = bpy.context.active_object
+    mt.name = f"mt_{str(index)}"
+    if index in body_dict:
+        mt.name += f"_{str(body_dict[index])}"
     order_of_markers.append(mt)
     #link empty to scene
     bpy.context.scene.collection.objects.link( mt )
@@ -76,7 +76,7 @@ for index, col in enumerate(markers_list):
     mt.location = coord
     #set the display size of the empty
     mt.empty_display_size = 0.02
-    
+
 #--------------------------------------------------------------
 #Virtual Markers!
 
@@ -90,13 +90,11 @@ bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
 #Create virtual marker where parameters are the name of the marker, the markers that affect its position, and each of their weights.
 def create_marker_weight(name, markers, weighted):
     center = Vector((0, 0, 0))
-    weight_iter = 0
-    for x in markers:
+    for weight_iter, x in enumerate(markers):
         center += x.location*weighted[weight_iter]
-        weight_iter += 1
     coord = Vector((float(center[0]), float(center[1]), float(center[2])))
     bpy.ops.object.add(type='EMPTY', location=coord)
-    mt = bpy.context.active_object  
+    mt = bpy.context.active_object
     mt.name = name
     bpy.context.scene.collection.objects.link( mt )
     mt.location = coord
@@ -131,12 +129,10 @@ update_virtual_data("weight", l0, w0, "m_neck")
 
 #Update the location of virtual markers on each frame
 def update_virtual_marker(index):
-    if(v_relationship[index] is "weight"):
+    if (v_relationship[index] is "weight"):
         center = Vector((0, 0, 0))
-        weight_iter = 0
-        for x in surrounding_markers[index]:
+        for weight_iter, x in enumerate(surrounding_markers[index]):
             center += x.location*weights[index][weight_iter]
-            weight_iter += 1
         coord = Vector((float(center[0]), float(center[1]), float(center[2])))
     virtual_markers[index].location = coord
     
@@ -216,7 +212,7 @@ list_of_bones_order = [('upper_arm_L', order_of_markers[11], order_of_markers[13
         ('hip_L', virtual_markers[1], order_of_markers[23]),
         ('hip_R', virtual_markers[1], order_of_markers[24]),
         ]
-        
+
 #based on marker # from order_of_markers array add bones for hands:
 left_hand_offset = 54
 left_hand = [('handL0', order_of_markers[0+left_hand_offset], order_of_markers[1+left_hand_offset]),
@@ -241,7 +237,7 @@ left_hand = [('handL0', order_of_markers[0+left_hand_offset], order_of_markers[1
     ('handL20', order_of_markers[18+left_hand_offset], order_of_markers[19+left_hand_offset]),
     ('wristL', order_of_markers[15], order_of_markers[0+left_hand_offset]),
     ('handL21', order_of_markers[19+left_hand_offset], order_of_markers[20+left_hand_offset]),]
-    
+
 right_hand_offset = 33
 
 right_hand = [('handR0', order_of_markers[18], order_of_markers[1+right_hand_offset]),
@@ -347,8 +343,8 @@ def my_handler(scene):
             current_marker += 1 
             for index in range(len(virtual_markers)):
                 update_virtual_marker(index)
-    
-    
+
+
     #keyframe bones
     #Goes through each bone
     for editBone in get_armature().data.edit_bones:
@@ -363,7 +359,7 @@ def my_handler(scene):
 def CreateMesh():
     obj = get_armature()
 
-    if obj == None:
+    if obj is None:
         print( "No selection" )
     elif obj.type != 'ARMATURE':
         print( "Armature expected" )
@@ -372,8 +368,8 @@ def CreateMesh():
 
 #Use armature to create base object
 def armToMesh( arm ):
-    name = arm.name + "_mesh"
-    dataMesh = bpy.data.meshes.new( name + "Data" )
+    name = f"{arm.name}_mesh"
+    dataMesh = bpy.data.meshes.new(f"{name}Data")
     mesh = bpy.data.objects.new( name, dataMesh )
     mesh.matrix_world = arm.matrix_world.copy()
     return mesh
@@ -519,12 +515,10 @@ bpy.ops.object.mode_set(mode='OBJECT')
 #set keyframes for whole animation
 for frame in range(scene.frame_start, scene.frame_end):
    scene.frame_set(frame)
-   
-#Select objects to export
-col = bpy.data.collections.get("Collection")
-if col:
-   for obj in col.objects:
-       if "Armature" == obj.name:
+
+if col := bpy.data.collections.get("Collection"):
+    for obj in col.objects:
+        if obj.name == "Armature":
             obj.select_set(True)
 
 
@@ -542,38 +536,64 @@ bpy.ops.object.mode_set(mode='POSE')
 
 #Bake the animation
 bpy.ops.nla.bake(frame_start=scene.frame_start, frame_end=scene.frame_end, only_selected=False, visual_keying=True, clear_constraints=True, use_current_action=False, bake_types={'POSE'})
-    
+
 bpy.ops.object.mode_set(mode='OBJECT')
 
 #delete empties
 empties = [e for e in bpy.data.objects
         if e.type.startswith('EMPTY')]
-        
+
 while empties:
     bpy.data.objects.remove(empties.pop())
 
 order_of_markers = []
 
 
-#Select objects to export
-col = bpy.data.collections.get("Collection")
-if col:
-   for obj in col.objects:
-       if "Armature" in obj.name:
-            obj.select_set(True)
-       if obj.name == "Cube":
-            bpy.data.objects.remove(obj)
-            
+if col := bpy.data.collections.get("Collection"):
+    for obj in col.objects:
+        if "Armature" in obj.name:
+             obj.select_set(True)
+        if obj.name == "Cube":
+             bpy.data.objects.remove(obj)
+
 #save blender file
 
-bpy.ops.wm.save_as_mainfile(filepath= sesh_path + "skeletal_animation_session.blend")
+bpy.ops.wm.save_as_mainfile(
+    filepath=f"{sesh_path}skeletal_animation_session.blend"
+)
+
 
 #export FBX
-bpy.ops.export_scene.fbx(filepath=sesh_path + "skeletal_animation_session.fbx", path_mode='RELATIVE', bake_anim=True, use_selection=True, object_types={'MESH', 'ARMATURE'}, use_mesh_modifiers = False, add_leaf_bones = False, axis_forward = '-X', axis_up = 'Z', bake_anim_use_all_bones = False, bake_anim_use_nla_strips = False, bake_anim_use_all_actions = False, bake_anim_force_startend_keying = False) 
+bpy.ops.export_scene.fbx(
+    filepath=f"{sesh_path}skeletal_animation_session.fbx",
+    path_mode='RELATIVE',
+    bake_anim=True,
+    use_selection=True,
+    object_types={'MESH', 'ARMATURE'},
+    use_mesh_modifiers=False,
+    add_leaf_bones=False,
+    axis_forward='-X',
+    axis_up='Z',
+    bake_anim_use_all_bones=False,
+    bake_anim_use_nla_strips=False,
+    bake_anim_use_all_actions=False,
+    bake_anim_force_startend_keying=False,
+)
+ 
 
 #export GLTF
-bpy.ops.export_scene.gltf(filepath=sesh_path + "skeletal_animation_session.gltf", export_format='GLTF_EMBEDDED', export_selected=True, ui_tab='ANIMATION')
+bpy.ops.export_scene.gltf(
+    filepath=f"{sesh_path}skeletal_animation_session.gltf",
+    export_format='GLTF_EMBEDDED',
+    export_selected=True,
+    ui_tab='ANIMATION',
+)
+
 
 #export USD
-bpy.ops.wm.usd_export(filepath=sesh_path + 'skeletal_animation_session.usdc', selected_objects_only=True, export_animation=True)
+bpy.ops.wm.usd_export(
+    filepath=f'{sesh_path}skeletal_animation_session.usdc',
+    selected_objects_only=True,
+    export_animation=True,
+)
 

@@ -88,7 +88,7 @@ class FmcTracDataHandler(object):
     def init_tracking_point_name(self, actor_name, point_name):
         if not self.has_actor(actor_name):
             self.init_actor(actor_name)
-        if not "tracking_points" in self.data["content"][actor_name]:
+        if "tracking_points" not in self.data["content"][actor_name]:
             self.data["content"][actor_name]["tracking_points"] = {}
         self.data["content"][actor_name]["tracking_points"][point_name] = {}
 
@@ -112,7 +112,7 @@ class FmcTracDataHandler(object):
         if self.has_actor(actor_name):
             self.data["content"][actor_name]["sample_count"] = sample_count
         else:
-            raise ValueError("Object does not contain an actor called: %s" % actor_name)
+            raise ValueError(f"Object does not contain an actor called: {actor_name}")
 
     def set_header(self,key, value):
         self.data["header"][key] = value
@@ -153,13 +153,10 @@ class FmcTracDataHandler(object):
             self.set_tracking_point_samples(actor_label, point_name, samples)
             self.set_tracking_point_parents(actor_label, point_name, parent_list)
 
-            if sample_count == False:
+            if sample_count in [False, len(samples)]:
                 sample_count = len(samples)
             else:
-                if not sample_count == len(samples):
-                    raise NotImplementedError("Tracking points have different sample count. This is not supported yet")
-                else:
-                    sample_count = len(samples)
+                raise NotImplementedError("Tracking points have different sample count. This is not supported yet")
         self.set_actor_sample_count(actor_label, sample_count)
 
 
@@ -170,7 +167,7 @@ class FmcTracDataHandler(object):
         if self.has_actor(actor_name):
             return self.data["content"][actor_label]
         else:
-            raise ValueError("Object has no actor named %s" % actor_label)
+            raise ValueError(f"Object has no actor named {actor_label}")
 
     def list_actors(self):
         return list(self.data["content"].keys())
@@ -185,7 +182,7 @@ class FmcTracDataHandler(object):
         if self.has_actor(actor_name):
             return self.data["content"][actor_name]["sample_count"]
         else:
-            raise ValueError("Object does not contain an actor called: %s" % actor_name)
+            raise ValueError(f"Object does not contain an actor called: {actor_name}")
 
 
 
@@ -209,14 +206,9 @@ class FmcTracDataHandler(object):
         if len(first_sample) > len(point_names): # Check if there is an equal amount of names points and indices in the data
             surplus_sample_points = len(first_sample) - len(point_names)
             for i in range(surplus_sample_points):
-                point_names.append("generatedName%s" % str(i).zfill(3))
+                point_names.append(f"generatedName{str(i).zfill(3)}")
 
-        # reordering data to be ["point_name"][sample_i][x,y,z]
-        data_reform = {}
-        for i, point_name in enumerate(point_names):
-            data_reform[point_name] = data[:,i,:]
-
-        return data_reform
+        return {point_name: data[:,i,:] for i, point_name in enumerate(point_names)}
 
 
 
@@ -224,7 +216,7 @@ class FmcTracDataHandler(object):
         """
         Returns a dictionary that maps point names to their parent point
         """
-        if not self.parent_mapping == False:
+        if self.parent_mapping != False:
             return self.parent_mapping
         else:
             raise ValueError("No parent mapping is set. Use set_parent_mapping() to define an appropriate map")
@@ -233,7 +225,7 @@ class FmcTracDataHandler(object):
         """
         Returns a list of names corresponding to the data positions
         """
-        if not self.point_name_mapping == False:
+        if self.point_name_mapping != False:
             return self.point_name_mapping
         else:
             raise ValueError("No point name mapping is set. Use set_point_name_mapping() to define an appropriate map")
@@ -246,18 +238,16 @@ def load_obj_from_file(file_path):
     # Loads file saved through this class
     f = Path(file_path)
 
-    if f.is_file():
-        if f.suffix.lower() == FILE_SUFFIX.lower():
-            print(f"Reading file from: {f.absolute()}")
-            with open(file_path, "rb") as infile:
-                data = pickle.load(infile)
-            if not isinstance(data, FmcTracDataHandler):
-                raise ValueError("Loaded data is not an instance of FmcTracDataHandler")
-        else:
-            raise ValueError("File has wrong extension. Should be '%s'" % FILE_SUFFIX)
-    else:
+    if not f.is_file():
         raise ValueError("File does not exist")
 
+    if f.suffix.lower() != FILE_SUFFIX.lower():
+        raise ValueError("File has wrong extension. Should be '%s'" % FILE_SUFFIX)
+    print(f"Reading file from: {f.absolute()}")
+    with open(file_path, "rb") as infile:
+        data = pickle.load(infile)
+    if not isinstance(data, FmcTracDataHandler):
+        raise ValueError("Loaded data is not an instance of FmcTracDataHandler")
     return data
 
 

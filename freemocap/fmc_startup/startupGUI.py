@@ -8,13 +8,13 @@ class setDataPathGUI:
     def __init__(self, master,session):
         self.master = master
         self.session = session
-    
+
         chooseText = "Please choose the directory your FreeMoCap_data folder is located in"
         chooseLabel = Label(master, text=chooseText)
         chooseLabel.pack(side="top")
 
-        self.currentPath = session.preferences['saved']['path_to_save'] 
-        text = 'Current file path: ' + str(self.currentPath)
+        self.currentPath = session.preferences['saved']['path_to_save']
+        text = f'Current file path: {str(self.currentPath)}'
         self.currentPathText = tk.StringVar()
         self.currentPathText.set(text)
         currentPathLabel = Label(master,textvariable = self.currentPathText)
@@ -34,7 +34,7 @@ class setDataPathGUI:
         self.currentPath = filedialog.askdirectory(
         title='Open a file',
         initialdir= Path.cwd())
-        self.currentPathText.set('Current file path: ' + self.currentPath)
+        self.currentPathText.set(f'Current file path: {self.currentPath}')
 
     
     def stop(self):
@@ -107,13 +107,13 @@ class setBlenderPathGUI:
     def __init__(self, master,session):
         self.master = master
         self.session = session
-    
+
         chooseText = "Choose your Blender executable"
         chooseLabel = Label(master, text=chooseText)
         chooseLabel.pack(side="top")
 
         self.currentPath = Path.cwd()
-        text = 'Current file path: ' + str(self.currentPath)
+        text = f'Current file path: {str(self.currentPath)}'
         self.currentPathText = tk.StringVar()
         self.currentPathText.set(text)
         currentPathLabel = Label(master,textvariable = self.currentPathText)
@@ -133,7 +133,7 @@ class setBlenderPathGUI:
         self.currentPath = filedialog.askopenfilename(
         title='Open your Blender executable',
         initialdir= Path.cwd())
-        self.currentPathText.set('Current file path: ' + self.currentPath)
+        self.currentPathText.set(f'Current file path: {self.currentPath}')
 
     
     def stop(self):
@@ -170,7 +170,5 @@ def RunChooseDLCPathGUI(session,saved_dlc_paths):
     root.mainloop()
 
     return chosenDLCPaths.config_paths
-
-    f = 2
 
   

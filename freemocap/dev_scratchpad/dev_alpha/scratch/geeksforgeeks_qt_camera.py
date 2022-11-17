@@ -181,13 +181,7 @@ class MainWindow(QMainWindow):
 	# change folder method
 	def change_folder(self):
 
-		# open the dialog to select path
-		path = QFileDialog.getExistingDirectory(self,
-												"Picture Location", "")
-
-		# if path is selected
-		if path:
-
+		if path := QFileDialog.getExistingDirectory(self, "Picture Location", ""):
 			# update the path
 			self.save_path = path
 

@@ -8,13 +8,13 @@ import cv2
 
 class Session: #self like "recording self"
     def __init__(self):
-        
+
         self.numCams = None
         self.numFrames = None
         self.numTrackedPoints = None 
 
         self.basePath = Path.cwd()
-        
+
         self.sessionID = '' #The sessionID tag will be used to generate files names and whatnot
         self.sessionPath = '' #The folder where the to-be-processed videos live (in a folder called "synced Vids")
         #self.numCams = ''#The number of cameras used in this recording self
@@ -40,16 +40,16 @@ class Session: #self like "recording self"
         Calls the create_session_paths and create_session_dictionary function
         """         
         #dataFolderPath = self.basePath/self.dataFolderName
-     
+
 
         if self.basePath.stem == self.dataFolderName: #don't recursively craete 'FreeMoCap_Data' folders!
             dataFolderPath = self.basePath
         else:
             dataFolderPath = self.basePath/self.dataFolderName
-        
+
         dataFolderPath.mkdir(exist_ok= True)
-            
-    
+
+
 
         self.sessionPath = dataFolderPath/self.sessionID
         self.sessionPath.mkdir(exist_ok=True)
@@ -68,11 +68,8 @@ class Session: #self like "recording self"
         Creates Path objects to each folder created in a recording self and adds them all to the pathList variable
         folders for these paths are created at the start of each stage where they are needed 
         """         
-        pathList = []
-
         self.rawVidPath = self.sessionPath/'RawVideos'
-        pathList.append(self.rawVidPath)
-
+        pathList = [self.rawVidPath]
         self.syncedVidPath = self.sessionPath/'SyncedVideos'
         pathList.append(self.syncedVidPath)
 
@@ -93,40 +90,37 @@ class Session: #self like "recording self"
 
         self.imOutPath = self.sessionPath/'imOut'
         pathList.append(self.imOutPath)
-        
+
         return pathList
 
     def create_session_dictionary(self):
         """ 
         Creates a dictionary of settings that should be saved into a YAML through each session
         """                
-    
+
 
         recording_parameters = {'numCams': self.numCams, 'numFrames': self.numFrames, 'numTrackedPoints': self.numTrackedPoints}
 
         #create a dictionary with the folder names (taken from the recordingconfig.py file) and the folder paths from pathList
         #NOTE AC- 6/30/21 - as of right now, the order of folder names in the recordingconfig.folder_setup list needs to match the 
         #                the order of folder paths in the pathList
-        session_paths = {}
+        session_paths = dict(zip(recordingconfig.folder_setup,self.pathList))
 
-        for foldername, folderpath in zip(recordingconfig.folder_setup,self.pathList):
-            session_paths[foldername] = folderpath
-
-        session_settings_dictionary = {'recording_parameters':recording_parameters, 'session_paths':session_paths}
-        
-        return session_settings_dictionary
+        return {
+            'recording_parameters': recording_parameters,
+            'session_paths': session_paths,
+        }
 
 
     def create_session_txt(self,paramDict,rotDict):
         """ 
         Create a text file listing recording parameters
         """    
-        parameter_text = self.sessionPath/'sessionSettings.txt' 
-        text = open(parameter_text, 'w')
-        text.write("Session ID = %s\n" %(self.sessionID))
-        text.write("%s = %s\n" %("Parameters", paramDict))
-        text.write("%s = %s\n" %("Rotations", rotDict))
-        text.close()
+        parameter_text = self.sessionPath/'sessionSettings.txt'
+        with open(parameter_text, 'w') as text:
+            text.write("Session ID = %s\n" %(self.sessionID))
+            text.write("%s = %s\n" %("Parameters", paramDict))
+            text.write("%s = %s\n" %("Rotations", rotDict))
 
     def save_session(self):
         """ 
@@ -138,10 +132,10 @@ class Session: #self like "recording self"
         for key,value in session_dictionary_to_save['session_paths'].items():
             session_dictionary_to_save['session_paths'][key] = str(value)
 
-        self.session_yaml_path = self.sessionPath/'{}_config.yaml'.format(self.sessionID)
-        
+        self.session_yaml_path = self.sessionPath / f'{self.sessionID}_config.yaml'
+
         session_yaml = YAML()
-        
+
 
         with open(self.session_yaml_path,'w') as outfile:
             session_yaml.dump(session_dictionary_to_save,outfile)
@@ -153,7 +147,7 @@ class Session: #self like "recording self"
         attributes needed to run the rest of the pipeline 
         """  
         #load all session settings back into the session class for this run-through of the code
-        
+
         #recordPath = self.basePath/'Data' #create a Data folder in the filepath if none exists yet
         #recordPath.mkdir(exist_ok= True)
 
@@ -161,8 +155,8 @@ class Session: #self like "recording self"
         self.sessionPath.mkdir(exist_ok=True)
 
 
-        
-        self.session_yaml_path = self.sessionPath/'{}_config.yaml'.format(self.sessionID)
+
+        self.session_yaml_path = self.sessionPath / f'{self.sessionID}_config.yaml'
 
         # if stage == 3:
         #     #this is for the case of GoPro recordings/external recordings - if no config file exists, create one
@@ -198,23 +192,25 @@ class Session: #self like "recording self"
             #run a check to make sure all the frame numbers are the same 
             a_sync_vid_path = list(self.syncedVidPath.glob('*.mp4'))
             frames_per_cam = {} 
-            
+
             for vid in a_sync_vid_path:
                 temp_cap = cv2.VideoCapture(str(vid))
                 thisCamFrames = temp_cap.get(cv2.CAP_PROP_FRAME_COUNT)
                 frames_per_cam[str(vid)] = thisCamFrames
             temp_cap.release()
             frame_check = len(list(set(list(frames_per_cam.values())))) == 1 # using set() to remove duplicates and check for values count
-            
 
-            if frame_check:
-                self.numFrames = int(thisCamFrames)
-                self.session_settings['recording_parameters'].update({'numFrames':self.numFrames})
-                self.numCams = len(a_sync_vid_path)
-                self.session_settings['recording_parameters'].update({'numCams':self.numCams})
-                self.save_session()
-            else:
-                raise ValueError('The number of frames in each video are not equal. Frame counts per video are are: ' + str(frames_per_cam))
+
+            if not frame_check:
+                raise ValueError(
+                    f'The number of frames in each video are not equal. Frame counts per video are are: {frames_per_cam}'
+                )
+
+            self.numFrames = int(thisCamFrames)
+            self.session_settings['recording_parameters'].update({'numFrames':self.numFrames})
+            self.numCams = len(a_sync_vid_path)
+            self.session_settings['recording_parameters'].update({'numCams':self.numCams})
+            self.save_session()
         
 
 
@@ -243,7 +239,6 @@ class Session: #self like "recording self"
         self.numTrackedPoints = session_settings_dictionary['recording_parameters']['numTrackedPoints']
 
         return session_settings_dictionary
-        f = 2
     
     # def load_session_paths(self, session_settings_dict):
 

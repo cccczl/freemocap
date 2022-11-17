@@ -9,6 +9,7 @@ is used by the view widget
 """
 
 
+
 import argparse
 import sys
 
@@ -50,10 +51,22 @@ parser.add_argument('--cuda', default=False, action='store_true', help="Use CUDA
 parser.add_argument('--dtype', default='uint8', choices=['uint8', 'uint16', 'float'], help="Image dtype (uint8, uint16, or float)")
 parser.add_argument('--frames', default=3, type=int, help="Number of image frames to generate (default=3)")
 parser.add_argument('--image-mode', default='mono', choices=['mono', 'rgb'], help="Image data mode (mono or rgb)", dest='image_mode')
-parser.add_argument('--levels', default=None, type=lambda s: tuple([float(x) for x in s.split(',')]), help="min,max levels to scale monochromatic image dynamic range, or rmin,rmax,gmin,gmax,bmin,bmax to scale rgb")
+parser.add_argument(
+    '--levels',
+    default=None,
+    type=lambda s: tuple(float(x) for x in s.split(',')),
+    help="min,max levels to scale monochromatic image dynamic range, or rmin,rmax,gmin,gmax,bmin,bmax to scale rgb",
+)
+
 parser.add_argument('--lut', default=False, action='store_true', help="Use color lookup table")
 parser.add_argument('--lut-alpha', default=False, action='store_true', help="Use alpha color lookup table", dest='lut_alpha')
-parser.add_argument('--size', default='512x512', type=lambda s: tuple([int(x) for x in s.split('x')]), help="WxH image dimensions default='512x512'")
+parser.add_argument(
+    '--size',
+    default='512x512',
+    type=lambda s: tuple(int(x) for x in s.split('x')),
+    help="WxH image dimensions default='512x512'",
+)
+
 args = parser.parse_args(sys.argv[1:])
 
 if RawImageGLWidget is not None:
@@ -72,7 +85,7 @@ win.show()
 
 if RawImageGLWidget is None:
     ui.rawGLRadio.setEnabled(False)
-    ui.rawGLRadio.setText(ui.rawGLRadio.text() + " (OpenGL not available)")
+    ui.rawGLRadio.setText(f"{ui.rawGLRadio.text()} (OpenGL not available)")
 else:
     ui.rawGLImg = RawImageGLWidget()
     ui.stack.addWidget(ui.rawGLImg)
@@ -90,10 +103,7 @@ ui.rgbCheck.setChecked(args.image_mode=='rgb')
 ui.maxSpin1.setOpts(value=255, step=1)
 ui.minSpin1.setOpts(value=0, step=1)
 levelSpins = [ui.minSpin1, ui.maxSpin1, ui.minSpin2, ui.maxSpin2, ui.minSpin3, ui.maxSpin3]
-if args.cuda and _has_cupy:
-    xp = cp
-else:
-    xp = np
+xp = cp if args.cuda and _has_cupy else np
 if args.levels is None:
     ui.scaleCheck.setChecked(False)
     ui.rgbLevelsCheck.setChecked(False)
@@ -134,10 +144,7 @@ LUT = None
 def updateLUT():
     global LUT, ui
     dtype = ui.dtypeCombo.currentText()
-    if dtype == 'uint8':
-        n = 256
-    else:
-        n = 4096
+    n = 256 if dtype == 'uint8' else 4096
     LUT = ui.gradient.getLookupTable(n, alpha=ui.alphaCheck.isChecked())
     if _has_cupy and xp == cp:
         LUT = cp.asarray(LUT)
@@ -187,10 +194,7 @@ def mkData():
                 raise ValueError(f"unable to handle dtype: {cacheKey[0]}")
 
             chan_shape = (height, width)
-            if ui.rgbCheck.isChecked():
-                frame_shape = chan_shape + (3,)
-            else:
-                frame_shape = chan_shape
+            frame_shape = chan_shape + (3,) if ui.rgbCheck.isChecked() else chan_shape
             data = xp.empty((frames,) + frame_shape, dtype=dt)
             view = data.reshape((-1,) + chan_shape)
             for idx in range(view.shape[0]):
@@ -260,11 +264,7 @@ lastTime = perf_counter()
 fps = None
 def update():
     global ui, ptr, lastTime, fps, LUT, pg_img
-    if ui.lutCheck.isChecked():
-        useLut = LUT
-    else:
-        useLut = None
-
+    useLut = LUT if ui.lutCheck.isChecked() else None
     downsample = ui.downsampleCheck.isChecked()
 
     if ui.scaleCheck.isChecked():
@@ -282,7 +282,7 @@ def update():
     success, image = cap.read()
     assert success, 'Camera Failed to load image'
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) #convert image from BGR to RGB color format
-    
+
     if ui.rawRadio.isChecked():
         ui.rawImg.setImage(image, lut=useLut, levels=useScale)
         ui.stack.setCurrentIndex(1)

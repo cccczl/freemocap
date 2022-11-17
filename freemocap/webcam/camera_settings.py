@@ -20,9 +20,9 @@ def initialize(session, stage, board):
 
     """ 
     
-    console.rule(style="color({})".format(13))    
-    console.rule('Finding available webcams',style="color({})".format(13))
-    console.rule(style="color({})".format(13)) 
+    console.rule(style='color(13)')
+    console.rule('Finding available webcams', style='color(13)')
+    console.rule(style='color(13)') 
 
     # if stage == 1:
     filepath = Path.cwd()
@@ -51,14 +51,12 @@ def initialize(session, stage, board):
 
 
     proceedToRecording = False #create this boolean, set it to false, and if the user wants to record
-                                #later in the pipeline, it will be set to true
-
 #run the GUI to get the tasks, the cams chosen, the camera settings, and the session ID
     cam_inputs, task = recordGUI.RunChoiceGUI()
     restartSetup = True
 
-    while restartSetup == True:
-        
+    while restartSetup:
+
         try:
             rotation_entry = session.preferences["saved"]["rotations"]
             parameter_entry = session.preferences["saved"]["parameters"]
@@ -66,14 +64,14 @@ def initialize(session, stage, board):
             print("Could not load saved parameters, using default parameters")
             rotation_entry = session.preferences['default']['rotations']
             parameter_entry = session.preferences['default']['parameters']
-                
+
 
         try:
             current_path_to_save = session.preferences['saved']['path_to_save']
         except:
             current_path_to_save = session.preferences['default']['path_to_save'] 
         rotDict, paramDict, session.sessionID,savepath, mediaPipeOverlay = recordGUI.RunParametersGUI(sessionID_in, rotation_entry, parameter_entry, current_path_to_save, cam_inputs, task)
-    
+
     #update the saved parameters in the YAML
         #recordingconfig.rotation_settings['saved'] = rotDict
         #recordingconfig.camera_session.preferences['saved'] = paramDict
@@ -86,7 +84,7 @@ def initialize(session, stage, board):
 
     #save recording parameters to the config yaml
 
-        
+
     #create a list from the rotation dictionary to be used in running webcams
         rotation_input = list(rotDict.values())
 
@@ -121,9 +119,9 @@ def initialize(session, stage, board):
         #print(sessionsettings)
         #config_yaml_path = recordingconfig.createSession(session,filepath)
         #recordingconfig.createSessionTxt(session,paramDict,rotDict)
-        
+
         print('Proceeding to Stage One')        
 
     else:
-    
+
         sys.exit('Recording Canceled')
